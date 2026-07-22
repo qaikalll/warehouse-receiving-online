@@ -692,7 +692,7 @@ function subscribeOnlineData(){
   }
 }
 async function openUserSession(firebaseUser){
-  const profileSnap=await db.collection("users".get().doc(firebaseUser.uid));
+  const profileSnap=await db.collection("users").doc(firebaseUser.uid).get();
   if(!profileSnap.exists){
     await auth.signOut();
     throw new Error("This login has no active warehouse profile.");
