@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Warehouse Receiving Sheet — Online Client Portal</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<style>
+  :root {
+    --blue:#0b63ce;
+    --blue-dark:#084a9b;
+    --blue-soft:#eaf3ff;
+    --white:#ffffff;
+    --bg:#f4f7fb;
+    --text:#172033;
+    --muted:#6c7a90;
+    --border:#dbe3ef;
+    --grey:#7c8798;
+    --orange:#ef8b17;
+    --green:#18864b;
+    --red:#d73737;
+    --dark-red:#8d1414;
+    --shadow:0 10px 26px rgba(23,32,51,.08);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px}
+  button,input,select,textarea{font:inherit}
+  button{cursor:pointer}
+  .app-shell{min-height:100vh}
+  .topbar{background:linear-gradient(135deg,var(--blue-dark),var(--blue));color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 4px 18px rgba(11,99,206,.22)}
+  .brand{display:flex;align-items:center;gap:13px}
+  .brand-icon{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:25px}
+  .brand h1{font-size:21px;margin:0}
+  .brand p{font-size:12px;margin:3px 0 0;opacity:.82}
+  .target-pill{background:rgba(255,255,255,.15);padding:9px 13px;border-radius:999px;font-weight:700;font-size:13px;white-space:nowrap}
+  .layout{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100vh - 80px)}
+  .sidebar{background:#fff;border-right:1px solid var(--border);padding:18px 12px;position:sticky;top:80px;height:calc(100vh - 80px);display:flex;flex-direction:column;gap:9px}
+  .nav-btn{border:0;background:transparent;border-radius:11px;padding:13px 14px;text-align:left;color:var(--text);display:flex;align-items:center;gap:10px;font-weight:700}
+  .nav-btn:hover{background:var(--blue-soft)}
+  .nav-btn.active{background:var(--blue);color:#fff}
+  .sidebar-footer{margin-top:auto;border-top:1px solid var(--border);padding-top:12px}
+  .danger-outline{width:100%;background:#fff;border:1px solid #f0bcbc;color:var(--red);padding:11px;border-radius:10px;font-weight:700}
+  .main{padding:22px;min-width:0}
+  .section{display:none}
+  .section.active{display:block}
+  .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+  .section-head h2{margin:0 0 5px;font-size:24px}
+  .section-head p{margin:0;color:var(--muted)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:9px}
+  .btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:var(--blue-dark)}
+  .btn-secondary{background:#e8eef8;color:#27405f}
+  .btn-success{background:var(--green);color:#fff}
+  .btn-warning{background:var(--orange);color:#fff}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-darkred{background:var(--dark-red);color:#fff}
+  .btn-outline{background:#fff;border:1px solid var(--border);color:var(--text)}
+  .btn-sm{padding:7px 9px;font-size:13px;border-radius:8px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .form-card{padding:20px;margin-bottom:20px}
+  .form-title{font-size:17px;font-weight:800;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.span-2{grid-column:span 2}
+  .field.span-4{grid-column:1/-1}
+  label{font-weight:700;font-size:13px;color:#33445f}
+  .required::after{content:" *";color:var(--red)}
+  input,select,textarea{width:100%;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text);padding:11px 12px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(11,99,206,.12)}
+  input[readonly]{background:#f4f6fa;color:#52627a}
+  textarea{resize:vertical;min-height:76px}
+  .variance-box{font-size:16px;font-weight:800}
+  .form-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+  .status-actions{display:flex;gap:10px;flex-wrap:wrap;padding:14px;background:#f7faff;border:1px dashed #bfd5f1;border-radius:12px;margin-top:15px}
+  .status-actions .btn{min-width:145px}
+  .live-timer{margin-left:auto;padding:10px 13px;border-radius:10px;background:#fff;border:1px solid var(--border);font-weight:800;min-width:205px;text-align:center}
+  .live-timer.warning{background:#fff2f2;color:var(--red);border-color:#f2b0b0}
+  .alert{display:none;margin-top:13px;border-radius:10px;padding:12px 14px;font-weight:700}
+  .alert.show{display:block}
+  .alert-danger{background:#fff0f0;border:1px solid #f3b3b3;color:#991f1f}
+  .alert-warning{background:#fff8e7;border:1px solid #f1d69c;color:#7d5600}
+  .alert-success{background:#eaf8f0;border:1px solid #a9d9bd;color:#17653a}
+  .filter-card{padding:15px;margin-bottom:16px}
+  .filter-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .table-card{overflow:hidden}
+  .table-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+  .table-header strong{font-size:16px}
+  .table-wrap{overflow:auto}
+  table{width:100%;border-collapse:collapse;min-width:1480px}
+  th,td{padding:11px 12px;border-bottom:1px solid #edf1f6;text-align:left;white-space:nowrap;font-size:13px;vertical-align:middle}
+  th{background:#f7f9fc;color:#40516d;position:sticky;top:0;z-index:2;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:hover{background:#f9fbff}
+  .empty-row td{text-align:center;color:var(--muted);padding:30px}
+  .status-badge{display:inline-flex;align-items:center;gap:6px;color:#fff;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}
+  .status-pending{background:var(--grey)}
+  .status-arrived{background:var(--blue)}
+  .status-receiving{background:var(--orange)}
+  .status-completed{background:var(--green)}
+  .status-exceeded{background:var(--red)}
+  .status-discrepancy{background:var(--dark-red)}
+  .action-group{display:flex;gap:6px}
+  .icon-btn{border:1px solid var(--border);background:#fff;border-radius:8px;padding:7px 9px}
+  .icon-btn:hover{background:var(--blue-soft)}
+  .stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px;margin-bottom:18px}
+  .stat-card{padding:17px;position:relative;overflow:hidden}
+  .stat-label{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stat-value{font-size:29px;font-weight:900;margin-top:7px}
+  .stat-note{font-size:12px;color:var(--muted);margin-top:4px}
+  .stat-icon{position:absolute;right:13px;top:13px;font-size:24px;opacity:.22}
+  .dashboard-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .chart-card,.summary-card{padding:18px}
+  .card-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .card-heading h3{margin:0;font-size:17px}
+  canvas{width:100%;height:280px;display:block}
+  .summary-list{display:flex;flex-direction:column;gap:10px}
+  .summary-item{display:flex;align-items:center;justify-content:space-between;padding:11px;border:1px solid var(--border);border-radius:10px}
+  .summary-item span:first-child{color:#4f6079}
+  .summary-item strong{font-size:17px}
+  .modal{display:none;position:fixed;inset:0;background:rgba(14,24,41,.56);z-index:100;align-items:center;justify-content:center;padding:18px}
+  .modal.show{display:flex}
+  .modal-box{background:#fff;border-radius:16px;box-shadow:0 25px 70px rgba(0,0,0,.24);width:min(760px,100%);max-height:90vh;overflow:auto}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+  .modal-head h3{margin:0}
+  .modal-body{padding:18px}
+  .close-btn{border:0;background:transparent;font-size:24px}
+  .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .detail-item{border:1px solid var(--border);border-radius:9px;padding:10px}
+  .detail-item small{display:block;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .photo-preview{max-width:100%;max-height:280px;border-radius:10px;border:1px solid var(--border)}
+  .toast-container{position:fixed;right:18px;bottom:18px;z-index:200;display:flex;flex-direction:column;gap:9px}
+  .toast{background:#172033;color:#fff;padding:12px 15px;border-radius:10px;box-shadow:var(--shadow);animation:slideIn .2s ease;max-width:350px;font-weight:700}
+  .toast.success{background:var(--green)}
+  .toast.error{background:var(--red)}
+  .toast.warning{background:var(--orange)}
+  @keyframes slideIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+  .mobile-menu{display:none;background:transparent;color:#fff;border:0;font-size:24px}
+  .small-muted{font-size:12px;color:var(--muted)}
+
+  .top-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+  .current-company-pill{background:#fff;color:var(--blue-dark);padding:9px 13px;border-radius:999px;font-weight:900;font-size:13px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.1)}
+  .workspace-card{border:1px solid #cfe0f6;background:linear-gradient(180deg,#f7fbff,#eef6ff);border-radius:12px;padding:12px;margin-bottom:7px}
+  .workspace-card label{display:block;color:var(--blue-dark);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+  .workspace-card select{font-weight:800;border-color:#b6d1f2;background:#fff}
+  .workspace-card .workspace-note{font-size:11px;color:#60718b;line-height:1.35;margin-top:7px}
+  .workspace-banner{padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-left:5px solid var(--blue);background:linear-gradient(90deg,#fff,#f5f9ff)}
+  .workspace-banner strong{color:var(--blue-dark)}
+  .workspace-banner .workspace-mode{font-size:12px;color:var(--muted);text-align:right}
+  .company-required-warning{display:none;margin-bottom:14px}
+  .company-required-warning.show{display:block}
+  .danger-outline + .danger-outline{margin-top:8px}
+  .btn:disabled,.icon-btn:disabled{cursor:not-allowed;opacity:.5}
+
+  .photo-note{font-size:12px;color:var(--muted);margin-top:4px}
+  @media(max-width:1200px){
+    .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .field.span-4{grid-column:1/-1}
+    .stats-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  @media(max-width:820px){
+    .layout{grid-template-columns:1fr}
+    .mobile-menu{display:block}
+    .sidebar{position:fixed;left:-250px;top:80px;width:230px;z-index:80;transition:.22s;box-shadow:var(--shadow)}
+    .sidebar.open{left:0}
+    .main{padding:15px}
+    .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .dashboard-grid{grid-template-columns:1fr}
+    .section-head{flex-direction:column}
+    .live-timer{width:100%;margin-left:0}
+  }
+  @media(max-width:560px){
+    body{font-size:15px}
+    .brand p,.target-pill{display:none}
+    .current-company-pill{max-width:180px;overflow:hidden;text-overflow:ellipsis}
+    .topbar{padding:14px}
+    .form-grid,.filter-grid,.detail-grid{grid-template-columns:1fr}
+    .field.span-2,.field.span-4{grid-column:auto}
+    .stats-grid{grid-template-columns:1fr 1fr}
+    .form-card{padding:14px}
+    .status-actions .btn{width:100%}
+    .toolbar .btn{flex:1}
+  }
+
+  /* Local login and role-based view */
+  .login-screen{position:fixed;inset:0;z-index:1000;background:linear-gradient(145deg,#073f86,#0b63ce 58%,#8fc4ff);display:grid;place-items:center;padding:20px}
+  .login-card{width:min(440px,100%);background:#fff;border-radius:22px;padding:28px;box-shadow:0 28px 90px rgba(0,0,0,.28)}
+  .login-logo{width:62px;height:62px;border-radius:18px;background:var(--blue-soft);display:grid;place-items:center;font-size:34px;margin-bottom:16px}
+  .login-card h2{margin:0 0 7px;font-size:27px}.login-card>p{margin:0 0 20px;color:var(--muted);line-height:1.5}
+  .login-card .field{margin-bottom:13px}.login-card .btn{width:100%;padding:13px;margin-top:4px}
+  .login-help{margin-top:15px;padding:11px 12px;background:#f5f8fc;border:1px solid var(--border);border-radius:10px;font-size:12px;color:#566780;line-height:1.5}
+  .login-error{display:none;margin-bottom:12px;padding:10px 12px;border-radius:9px;background:#fff0f0;color:#991f1f;border:1px solid #f3b3b3;font-weight:700}.login-error.show{display:block}
+  body.logged-out .app-shell{display:none} body:not(.logged-out) .login-screen{display:none}
+  .user-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);padding:7px 8px 7px 12px;border-radius:999px;font-size:12px;font-weight:800}
+  .user-pill button{border:0;background:#fff;color:var(--blue-dark);border-radius:999px;padding:6px 9px;font-size:12px;font-weight:800}
+  .admin-only{display:none} body.role-admin .admin-only{display:flex}
+  body.role-client .workspace-card,
+  body.role-client #receivingSection .form-card,
+  body.role-client #discrepancySection .form-card,
+  body.role-client #clearWorkspaceBtn,
+  body.role-client #clearAllBtn,
+  body.role-client #resetReceivingBtn,
+  body.role-client #resetDiscrepancyBtn,
+  body.role-client [data-go="receiving"],
+  body.role-client [data-action="edit-rec"],
+  body.role-client [data-action="delete-rec"],
+  body.role-client [data-action="edit-disc"],
+  body.role-client [data-action="delete-disc"],
+  body.role-client [data-action="resolve-disc"]{display:none!important}
+  body.role-client .workspace-mode::after{content:" Read-only client access."}
+  .account-table{width:100%;min-width:760px}.account-table th,.account-table td{font-size:12px}.account-password{font-family:Consolas,monospace}
+  .account-tools{display:flex;gap:6px}.account-search{margin-bottom:12px}
+  .security-note{background:#fff8e7;border:1px solid #efd18e;color:#6c4a00;padding:11px 13px;border-radius:10px;font-size:12px;line-height:1.45;margin-bottom:14px}
+  @media(max-width:820px){.user-pill span{display:none}.login-card{padding:22px}}
+
+</style>
+</head>
+<body class="logged-out">
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🏭</div>
+    <h2>Warehouse Receiving Sheet</h2>
+    <p>Sign in to open the correct company workspace.</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input id="loginId" type="email" autocomplete="username" placeholder="Enter registered email"></div>
+      <div class="field"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter password"></div>
+      <button class="btn btn-primary" type="submit">🔐 Sign In</button>
+    </form>
+    <div class="login-help"><strong>Online portal:</strong> sign in using the email and password registered by the administrator. Data is synchronized through Firebase.</div>
+  </div>
+</div>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <button class="mobile-menu" id="mobileMenu" aria-label="Open menu">☰</button>
+      <div class="brand-icon">🏭</div>
+      <div>
+        <h1>Warehouse Receiving Sheet</h1>
+        <p>Receiving operations and company client portal</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="current-company-pill">🏢 <span id="currentCompanyLabel">Airali</span></div>
+      <div class="target-pill">⏱ Target: Complete within 4 hours</div>
+      <div class="user-pill"><span id="signedInUser">Not signed in</span><button id="logoutBtn" type="button">Logout</button></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="workspace-card">
+        <label for="companyWorkspace">Company Workspace</label>
+        <select id="companyWorkspace" aria-label="Select company workspace">
+          <option value="__ALL__">All Companies</option>
+          <option value="Airali">Airali</option>
+          <option value="UCMAS">UCMAS</option>
+          <option value="Alard">Alard</option>
+          <option value="Zucca">Zucca</option>
+          <option value="Audrey">Audrey</option>
+          <option value="BUM">BUM</option>
+          <option value="AvantHealth">AvantHealth</option>
+          <option value="BeastKingdom">BeastKingdom</option>
+          <option value="Commbax">Commbax</option>
+          <option value="CoyaCozy">CoyaCozy</option>
+          <option value="Beoka">Beoka</option>
+          <option value="DiademSports">DiademSports</option>
+          <option value="GalaxySports">GalaxySports</option>
+          <option value="Warrix001-B2C">Warrix001-B2C</option>
+          <option value="Warrix002-B2B">Warrix002-B2B</option>
+          <option value="VictorSports">VictorSports</option>
+          <option value="Mills">Mills</option>
+          <option value="DouDouTrading">DouDouTrading</option>
+          <option value="EarthHome">EarthHome</option>
+          <option value="EarthNMe">EarthNMe</option>
+          <option value="HarmanKardon">HarmanKardon</option>
+          <option value="Marna/Mare">Marna/Mare</option>
+          <option value="MYNT">MYNT</option>
+          <option value="OGAWA">OGAWA</option>
+          <option value="Jacko">Jacko</option>
+          <option value="Kimma">Kimma</option>
+          <option value="LaMaison">LaMaison</option>
+          <option value="Lert">Lert</option>
+          <option value="Darizi">Darizi</option>
+          <option value="Miseoul-KMT">Miseoul-KMT</option>
+          <option value="MonoDigital">MonoDigital</option>
+          <option value="Morveen">Morveen</option>
+          <option value="Quka">Quka</option>
+          <option value="Peacock">Peacock</option>
+          <option value="Roofless">Roofless</option>
+          <option value="SammoorBeauty">SammoorBeauty</option>
+          <option value="Skinville">Skinville</option>
+          <option value="Yondson">Yondson</option>
+          <option value="Trainix">Trainix</option>
+          <option value="KSM">KSM</option>
+          <option value="MJM">MJM</option>
+          <option value="RevEdition (HOKA)">RevEdition (HOKA)</option>
+          <option value="SerbaWangi">SerbaWangi</option>
+          <option value="NexGen">NexGen</option>
+          <option value="ECCIATO">ECCIATO</option>
+          <option value="Golden Choice">Golden Choice</option>
+          <option value="Tong Kee">Tong Kee</option>
+          <option value="MUSE">MUSE</option>
+          <option value="PIXX">PIXX</option>
+          <option value="Showtv">Showtv</option>
+        </select>
+        <div class="workspace-note">Dashboard, tables, reports and exports follow the selected company.</div>
+      </div>
+      <button class="nav-btn active" data-section="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-section="receiving">📦 Receiving Sheet</button>
+      <button class="nav-btn" data-section="discrepancy">⚠️ Discrepancy Report</button>
+      <button class="nav-btn admin-only" id="manageAccountsBtn" type="button">🔐 Manage Logins</button>
+      <div class="sidebar-footer">
+        <button class="danger-outline" id="clearWorkspaceBtn">🗑 Clear Company Data</button>
+        <button class="danger-outline" id="clearAllBtn">⚠ Clear All Companies</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="card workspace-banner">
+        <div>🏢 Viewing workspace: <strong id="workspaceBannerName">Airali</strong></div>
+        <div class="workspace-mode" id="workspaceModeText">Only Airali records are shown.</div>
+      </div>
+      <section class="section active" id="dashboardSection">
+        <div class="section-head">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Daily warehouse receiving performance overview.</p>
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-outline" id="refreshDashboardBtn">↻ Refresh</button>
+            <button class="btn btn-primary" data-go="receiving">＋ New Receiving</button>
+          </div>
+        </div>
+
+        <div class="card filter-card">
+          <div class="filter-grid">
+            <div class="field"><label>Date</label><input type="date" id="dashFilterDate"></div>
+            <div class="field"><label>Customer</label><input type="text" id="dashFilterCustomer" placeholder="Customer name"></div>
+            <div class="field"><label>Status</label>
+              <select id="dashFilterStatus">
+                <option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option>
+              </select>
+            </div>
+            <div class="field"><label>DO Number</label><input type="text" id="dashFilterDO" placeholder="Search DO"></div>
+            <div class="field"><label>PO Number</label><input type="text" id="dashFilterPO" placeholder="Search PO"></div>
+            <div class="field" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-secondary" id="resetDashboardFilters">Reset Filters</button></div>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="dashboard-grid">
+          <div class="card chart-card">
+            <div class="card-heading"><h3>Daily Receiving Chart</h3><span class="small-muted">Last 7 days</span></div>
+            <canvas id="dailyChart" width="900" height="300"></canvas>
+          </div>
+          <div class="card summary-card">
+            <div class="card-heading"><h3>Today Summary</h3></div>
+            <div class="summary-list" id="todaySummary"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="receivingSection">
+        <div class="section-head">
+          <div><h2>Receiving Sheet</h2><p>Record inbound shipment and track receiving time.</p></div>
+          <div class="toolbar">
+            <button class="btn btn-outline" id="exportReceivingBtn">⬇ Export CSV</button>
+            <button class="btn btn-secondary" id="resetReceivingBtn">↺ Reset Form</button>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-title"><span>📦 Shipment Information</span><span class="status-badge status-pending" id="formStatusBadge">Pending</span></div>
+          <div class="alert alert-warning company-required-warning" id="receivingCompanyWarning">⚠ Select a company workspace before creating a receiving record.</div>
+          <form id="receivingForm" novalidate>
+            <input type="hidden" id="receivingEditId">
+            <div class="form-grid">
+              <div class="field"><label>Record ID</label><input id="recordId" readonly></div>
+              <div class="field"><label class="required">DO Number</label><input id="doNumber" autocomplete="off" placeholder="Example: DO-2026-001"></div>
+              <div class="field"><label class="required">PO Number</label><input id="poNumber" autocomplete="off" placeholder="Example: PO-88921"></div>
+              <div class="field"><label class="required">Company Name</label><input id="customerName" readonly placeholder="Select company workspace"></div>
+              <div class="field"><label class="required">Shipment Date</label><input type="date" id="shipmentDate"></div>
+              <div class="field"><label class="required">Vehicle Number</label><input id="vehicleNumber" placeholder="Example: VAB 1234 / Lalamove"></div>
+              <div class="field"><label class="required">Transport Type</label>
+                <select id="transportType"><option value="">Select transport</option><option>Lorry</option><option>Van</option><option>Car</option><option>Motorcycle</option><option>Lalamove</option><option>Other</option></select>
+              </div>
+              <div class="field"><label class="required">Receiving Staff Name</label><input id="staffName" list="staffList" placeholder="Staff name"></div>
+              <div class="field"><label class="required">Expected CTN / Pallet Qty</label><input type="number" id="expectedQty" min="0" step="1" placeholder="0"></div>
+              <div class="field"><label>Actual Received Qty</label><input type="number" id="actualQty" min="0" step="1" placeholder="0"></div>
+              <div class="field"><label>Variance</label><input class="variance-box" id="variance" value="0" readonly></div>
+              <div class="field"><label>Current Date / Time</label><input id="currentDateTime" readonly></div>
+              <div class="field span-4"><label>Remarks</label><textarea id="receivingRemarks" placeholder="Optional remarks"></textarea></div>
+            </div>
+
+            <div class="status-actions">
+              <button type="button" class="btn btn-primary" id="arrivedBtn">🚚 Arrived</button>
+              <button type="button" class="btn btn-warning" id="startBtn">▶ Start Receiving</button>
+              <button type="button" class="btn btn-success" id="completeBtn">✓ Complete</button>
+              <div class="live-timer" id="liveTimer">4-hour timer: Not started</div>
+            </div>
+
+            <div class="alert alert-danger" id="receivingError"></div>
+            <div class="alert alert-warning" id="varianceWarning">⚠ Quantity does not match. Please create a discrepancy report.</div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Record</button>
+              <button type="button" class="btn btn-darkred" id="createDiscrepancyBtn" style="display:none">⚠ Create Discrepancy Report</button>
+              <span class="small-muted" id="timestampInfo"></span>
+            </div>
+          </form>
+        </div>
+
+        <div class="card filter-card">
+          <div class="filter-grid">
+            <div class="field"><label>Date</label><input type="date" id="recFilterDate"></div>
+            <div class="field"><label>Customer</label><input id="recFilterCustomer" placeholder="Customer"></div>
+            <div class="field"><label>Status</label><select id="recFilterStatus"><option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option></select></div>
+            <div class="field"><label>DO Number</label><input id="recFilterDO" placeholder="DO number"></div>
+            <div class="field"><label>PO Number</label><input id="recFilterPO" placeholder="PO number"></div>
+            <div class="field" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-secondary" id="resetReceivingFilters" type="button">Reset Filters</button></div>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-header"><strong>Receiving Records — <span id="receivingWorkspaceLabel">Airali</span></strong><span class="small-muted" id="receivingCount">0 records</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Record ID</th><th>Date</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>Vehicle</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Arrival</th><th>Start</th><th>Completion</th><th>Total Duration</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="receivingTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="discrepancySection">
+        <div class="section-head">
+          <div><h2>Discrepancy Report</h2><p>Record damaged, missing, excess or wrong items.</p></div>
+          <div class="toolbar"><button class="btn btn-outline" id="exportDiscrepancyBtn">⬇ Export CSV</button><button class="btn btn-secondary" id="resetDiscrepancyBtn">↺ Reset Form</button></div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-title"><span>⚠ Discrepancy Details</span><span class="status-badge status-discrepancy" id="discFormBadge">Unresolved</span></div>
+          <div class="alert alert-warning company-required-warning" id="discrepancyCompanyWarning">⚠ Select a company workspace before creating a discrepancy report.</div>
+          <form id="discrepancyForm" novalidate>
+            <input type="hidden" id="discrepancyEditId">
+            <input type="hidden" id="linkedReceivingId">
+            <div class="form-grid">
+              <div class="field"><label class="required">Report Date</label><input type="date" id="reportDate"></div>
+              <div class="field"><label class="required">DO Number</label><input id="discDONumber"></div>
+              <div class="field"><label class="required">PO Number</label><input id="discPONumber"></div>
+              <div class="field"><label class="required">Company Name</label><input id="discCustomer" readonly></div>
+              <div class="field"><label class="required">SKU</label><input id="sku" placeholder="SKU code"></div>
+              <div class="field"><label class="required">Product Name</label><input id="productName" placeholder="Product name"></div>
+              <div class="field"><label class="required">Expected Quantity</label><input type="number" id="discExpectedQty" min="0" step="1"></div>
+              <div class="field"><label class="required">Actual Quantity</label><input type="number" id="discActualQty" min="0" step="1"></div>
+              <div class="field"><label>Variance</label><input id="discVariance" class="variance-box" readonly value="0"></div>
+              <div class="field"><label class="required">Issue Type</label><select id="issueType"><option value="">Select issue</option><option>Damaged Item</option><option>Short Quantity</option><option>Excess Quantity</option><option>Wrong Item</option><option>Missing Item</option><option>Packaging Damage</option><option>Other</option></select></div>
+              <div class="field"><label class="required">Item Condition</label><select id="itemCondition"><option value="">Select condition</option><option>Good</option><option>Damaged</option><option>Rejected</option></select></div>
+              <div class="field"><label class="required">Action Taken</label><select id="actionTaken"><option value="">Select action</option><option>Return to Sender</option><option>Dispose</option><option>Quarantine</option><option>Replace</option><option>Accept with Approval</option><option>Pending Investigation</option></select></div>
+              <div class="field"><label class="required">Person in Charge</label><input id="personInCharge" placeholder="PIC name"></div>
+              <div class="field span-2"><label>Photo Upload</label><input type="file" id="photoUpload" accept="image/*"><div class="photo-note">Images are compressed before being saved online.</div></div>
+              <div class="field span-4"><label>Remarks</label><textarea id="discRemarks" placeholder="Add details about the issue"></textarea></div>
+            </div>
+            <div class="alert alert-danger" id="discrepancyError"></div>
+            <div class="form-actions"><button type="submit" class="btn btn-darkred">💾 Save Discrepancy</button><span class="small-muted" id="photoStatus"></span></div>
+          </form>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-header"><strong>Discrepancy Cases — <span id="discrepancyWorkspaceLabel">Airali</span></strong><span class="small-muted" id="discrepancyCount">0 cases</span></div>
+          <div class="table-wrap">
+            <table style="min-width:1350px">
+              <thead><tr><th>Date</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>SKU</th><th>Product</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Issue</th><th>Condition</th><th>Action</th><th>PIC</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="discrepancyTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<datalist id="customerList"></datalist>
+<datalist id="staffList"></datalist>
+
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="modalTitle">Details</h3><button class="close-btn" id="closeModal">×</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="accountsModal">
+  <div class="modal-box" style="width:min(1020px,100%)">
+    <div class="modal-head"><h3>Login Accounts</h3><button class="close-btn" id="closeAccountsModal">×</button></div>
+    <div class="modal-body">
+      <div class="security-note"><strong>Online accounts:</strong> users are stored in Firebase Authentication. Client accounts can only read records for the company assigned below.</div>
+      <form id="createAccountForm" class="card" style="padding:16px;margin-bottom:16px">
+        <div class="form-grid">
+          <div class="field"><label>Email</label><input id="newAccountEmail" type="email" required placeholder="client@company.com"></div>
+          <div class="field"><label>Temporary Password</label><input id="newAccountPassword" type="password" minlength="6" required placeholder="Minimum 6 characters"></div>
+          <div class="field"><label>Display Name</label><input id="newAccountName" required placeholder="Company contact / staff name"></div>
+          <div class="field"><label>Role</label><select id="newAccountRole"><option value="client">Client</option><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+          <div class="field span-2"><label>Company</label><select id="newAccountCompany"><option value="">Select company</option><option value="Airali">Airali</option><option value="UCMAS">UCMAS</option><option value="Alard">Alard</option><option value="Zucca">Zucca</option><option value="Audrey">Audrey</option><option value="BUM">BUM</option><option value="AvantHealth">AvantHealth</option><option value="BeastKingdom">BeastKingdom</option><option value="Commbax">Commbax</option><option value="CoyaCozy">CoyaCozy</option><option value="Beoka">Beoka</option><option value="DiademSports">DiademSports</option><option value="GalaxySports">GalaxySports</option><option value="Warrix001-B2C">Warrix001-B2C</option><option value="Warrix002-B2B">Warrix002-B2B</option><option value="VictorSports">VictorSports</option><option value="Mills">Mills</option><option value="DouDouTrading">DouDouTrading</option><option value="EarthHome">EarthHome</option><option value="EarthNMe">EarthNMe</option><option value="HarmanKardon">HarmanKardon</option><option value="Marna/Mare">Marna/Mare</option><option value="MYNT">MYNT</option><option value="OGAWA">OGAWA</option><option value="Jacko">Jacko</option><option value="Kimma">Kimma</option><option value="LaMaison">LaMaison</option><option value="Lert">Lert</option><option value="Darizi">Darizi</option><option value="Miseoul-KMT">Miseoul-KMT</option><option value="MonoDigital">MonoDigital</option><option value="Morveen">Morveen</option><option value="Quka">Quka</option><option value="Peacock">Peacock</option><option value="Roofless">Roofless</option><option value="SammoorBeauty">SammoorBeauty</option><option value="Skinville">Skinville</option><option value="Yondson">Yondson</option><option value="Trainix">Trainix</option><option value="KSM">KSM</option><option value="MJM">MJM</option><option value="RevEdition (HOKA)">RevEdition (HOKA)</option><option value="SerbaWangi">SerbaWangi</option><option value="NexGen">NexGen</option><option value="ECCIATO">ECCIATO</option><option value="Golden Choice">Golden Choice</option><option value="Tong Kee">Tong Kee</option><option value="MUSE">MUSE</option><option value="PIXX">PIXX</option><option value="Showtv">Showtv</option></select></div>
+          <div class="field span-2" style="justify-content:flex-end"><label>&nbsp;</label><button class="btn btn-primary" type="submit">＋ Create Login</button></div>
+        </div>
+        <div class="alert alert-danger" id="accountError"></div>
+      </form>
+      <input class="account-search" id="accountSearch" placeholder="Search email, role or company">
+      <div class="table-wrap"><table class="account-table"><thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Company</th><th>Status</th><th>Actions</th></tr></thead><tbody id="accountTableBody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+
+<script type="module">
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  createUserWithEmailAndPassword, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, setDoc, deleteDoc, updateDoc,
+  onSnapshot, query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAGDRTLXWaCWZpNdqA8KIBoUYJWBEq8qFM",
+  authDomain: "warehouse-receiving-online.firebaseapp.com",
+  projectId: "warehouse-receiving-online",
+  storageBucket: "warehouse-receiving-online.firebasestorage.app",
+  messagingSenderId: "655223366420",
+  appId: "1:655223366420:web:7437455a7908e31e521801",
+  measurementId: "G-FV5D6TBVR1"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+
+const ALL_COMPANIES = "__ALL__";
+const COMPANIES = ["Airali", "UCMAS", "Alard", "Zucca", "Audrey", "BUM", "AvantHealth", "BeastKingdom", "Commbax", "CoyaCozy", "Beoka", "DiademSports", "GalaxySports", "Warrix001-B2C", "Warrix002-B2B", "VictorSports", "Mills", "DouDouTrading", "EarthHome", "EarthNMe", "HarmanKardon", "Marna/Mare", "MYNT", "OGAWA", "Jacko", "Kimma", "LaMaison", "Lert", "Darizi", "Miseoul-KMT", "MonoDigital", "Morveen", "Quka", "Peacock", "Roofless", "SammoorBeauty", "Skinville", "Yondson", "Trainix", "KSM", "MJM", "RevEdition (HOKA)", "SerbaWangi", "NexGen", "ECCIATO", "Golden Choice", "Tong Kee", "MUSE", "PIXX", "Showtv"];
+const ACTIVE_COMPANY_KEY = "wrs_online_active_company_v1";
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+
+let activeCompany = localStorage.getItem(ACTIVE_COMPANY_KEY) || ALL_COMPANIES;
+let receivingRecords = [];
+let discrepancyRecords = [];
+let accounts = [];
+let currentUser = null;
+let selectedPhotoData = "";
+let timerInterval = null;
+let unsubscribeReceiving = null;
+let unsubscribeDiscrepancy = null;
+let unsubscribeAccounts = null;
+
+const $ = id => document.getElementById(id);
+const esc = value => String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#039;",'"':"&quot;"}[c]));
+const localDateISO = (date=new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+const todayISO = () => localDateISO();
+const nowISO = () => new Date().toISOString();
+const fmtDateTime = iso => iso ? new Date(iso).toLocaleString("en-GB", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "-";
+const fmtTime = iso => iso ? new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",second:"2-digit"}) : "-";
+
+function companyIdFor(name){ return String(name||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "unassigned"; }
+function companyNameFromId(id){
+  if(id === "ALL" || id === ALL_COMPANIES) return "All Companies";
+  return COMPANIES.find(c => companyIdFor(c) === id) || id || "Unassigned";
+}
+function workspaceName(){ return activeCompany===ALL_COMPANIES ? "All Companies" : activeCompany; }
+function isAllCompanies(){ return activeCompany===ALL_COMPANIES; }
+function isEditor(){ return currentUser && ["staff","admin"].includes(currentUser.role); }
+function isAdmin(){ return currentUser?.role === "admin"; }
+function requireEditor(){ if(isEditor()) return true; toast("Client access is view-only.","warning"); return false; }
+function belongsToWorkspace(record){
+  if(currentUser?.role === "client") return record.companyId === currentUser.companyId;
+  return isAllCompanies() || record.customer === activeCompany;
+}
+function workspaceReceivingRecords(){ return receivingRecords.filter(belongsToWorkspace); }
+function workspaceDiscrepancyRecords(){ return discrepancyRecords.filter(belongsToWorkspace); }
+function safeFilePart(value){ return String(value||"all-companies").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || "all-companies"; }
+function num(v){ return Number(v || 0); }
+function variance(expected, actual){ return num(actual) - num(expected); }
+function durationMs(record){
+  if(!record.arrivalTime) return 0;
+  const end = record.completionTime ? new Date(record.completionTime) : new Date();
+  return Math.max(0, end - new Date(record.arrivalTime));
+}
+function formatDuration(ms){
+  if(!ms) return "-";
+  const totalMinutes = Math.floor(ms / 60000);
+  return `${Math.floor(totalMinutes/60)}h ${totalMinutes%60}m`;
+}
+function formatClock(ms){
+  const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
+}
+function baseStatus(record){
+  if(record.completionTime) return durationMs(record)>FOUR_HOURS_MS ? "Exceeded 4 Hours" : "Completed";
+  if(record.startTime) return "Receiving";
+  if(record.arrivalTime) return "Arrived";
+  return "Pending";
+}
+function hasDiscrepancy(record){ return variance(record.expectedQty,record.actualQty)!==0; }
+function statusClass(status){
+  return ({"Pending":"status-pending","Arrived":"status-arrived","Receiving":"status-receiving","Completed":"status-completed","Exceeded 4 Hours":"status-exceeded","Discrepancy":"status-discrepancy","Resolved":"status-completed","Unresolved":"status-discrepancy"})[status] || "status-pending";
+}
+function statusBadge(status){ return `<span class="status-badge ${statusClass(status)}">${esc(status)}</span>`; }
+function newRecordId(){ return `RCV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`; }
+function newDiscrepancyId(){ return `DR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`; }
+function toast(message,type="success"){
+  const el=document.createElement("div"); el.className=`toast ${type}`; el.textContent=message;
+  $("toastContainer").appendChild(el); setTimeout(()=>el.remove(),3400);
+}
+function showError(id,message){ const el=$(id); if(!el)return; el.textContent=message; el.classList.add("show"); }
+function hideError(id){ $(id)?.classList.remove("show"); }
+function updateCurrentDateTime(){ $("currentDateTime").value=new Date().toLocaleString("en-GB"); }
+function authErrorMessage(error){
+  const map={
+    "auth/invalid-credential":"Email or password is incorrect.",
+    "auth/user-disabled":"This account has been disabled.",
+    "auth/too-many-requests":"Too many attempts. Please try again later.",
+    "auth/email-already-in-use":"This email is already registered.",
+    "auth/invalid-email":"Please enter a valid email address.",
+    "auth/weak-password":"Password must contain at least 6 characters."
+  };
+  return map[error?.code] || error?.message || "Something went wrong.";
+}
+function normalizeDocument(snapshot){
+  const data=snapshot.data();
+  return {...data, id:data.id||snapshot.id, firestoreId:snapshot.id};
+}
+
+function stopSubscriptions(){
+  [unsubscribeReceiving,unsubscribeDiscrepancy,unsubscribeAccounts].forEach(fn=>{try{fn?.()}catch{}});
+  unsubscribeReceiving=unsubscribeDiscrepancy=unsubscribeAccounts=null;
+}
+function renderAll(){
+  updateWorkspaceUI();
+  renderReceivingTable();
+  renderDiscrepancyTable();
+  renderDashboard();
+  refreshDatalists();
+}
+function subscribeOnlineData(){
+  stopSubscriptions();
+  const client=currentUser.role==="client";
+  const recBase=collection(db,"receivings");
+  const discBase=collection(db,"discrepancies");
+  const recQ=client ? query(recBase,where("companyId","==",currentUser.companyId)) : recBase;
+  const discQ=client ? query(discBase,where("companyId","==",currentUser.companyId)) : discBase;
+
+  unsubscribeReceiving=onSnapshot(recQ,snap=>{
+    receivingRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
+    renderAll();
+  },error=>toast("Receiving sync error: "+authErrorMessage(error),"warning"));
+
+  unsubscribeDiscrepancy=onSnapshot(discQ,snap=>{
+    discrepancyRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||"").localeCompare(String(a.updatedAt||a.createdAt||"")));
+    renderAll();
+  },error=>toast("Discrepancy sync error: "+authErrorMessage(error),"warning"));
+
+  if(isAdmin()){
+    unsubscribeAccounts=onSnapshot(collection(db,"users"),snap=>{
+      accounts=snap.docs.map(d=>({uid:d.id,...d.data()}));
+      renderAccounts();
+    },error=>toast("Account list error: "+authErrorMessage(error),"warning"));
+  }
+}
+async function openUserSession(firebaseUser){
+  const profileSnap=await getDoc(doc(db,"users",firebaseUser.uid));
+  if(!profileSnap.exists()){
+    await signOut(auth);
+    throw new Error("This login has no active warehouse profile.");
+  }
+  const profile=profileSnap.data();
+  if(profile.active!==true){
+    await signOut(auth);
+    throw new Error("This account is disabled.");
+  }
+  currentUser={
+    uid:firebaseUser.uid,
+    email:firebaseUser.email,
+    role:profile.role,
+    companyId:profile.companyId,
+    companyName:profile.companyName||companyNameFromId(profile.companyId),
+    displayName:profile.displayName||firebaseUser.email
+  };
+  document.body.classList.remove("logged-out","role-client","role-staff","role-admin");
+  document.body.classList.add("role-"+currentUser.role);
+  $("signedInUser").textContent=`${currentUser.displayName} · ${currentUser.role.toUpperCase()}`;
+  if(currentUser.role==="client") activeCompany=currentUser.companyName;
+  else if(activeCompany!==ALL_COMPANIES&&!COMPANIES.includes(activeCompany)) activeCompany=ALL_COMPANIES;
+  localStorage.setItem(ACTIVE_COMPANY_KEY,activeCompany);
+  resetReceivingForm();
+  resetDiscrepancyForm();
+  subscribeOnlineData();
+  toast(`Signed in as ${currentUser.displayName}.`,"success");
+}
+async function logout(){
+  stopSubscriptions();
+  stopTimer();
+  currentUser=null;
+  receivingRecords=[];
+  discrepancyRecords=[];
+  accounts=[];
+  await signOut(auth);
+  document.body.className="logged-out";
+  $("loginForm").reset();
+}
+function showSection(name){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.section===name));
+  $(`${name}Section`).classList.add("active");
+  $("sidebar").classList.remove("open");
+  if(name==="dashboard") renderDashboard();
+  if(name==="receiving") renderReceivingTable();
+  if(name==="discrepancy") renderDiscrepancyTable();
+}
+function getReceivingFormRecord(){
+  const editId=$("receivingEditId").value;
+  const old=editId?receivingRecords.find(r=>r.id===editId):null;
+  const customer=$("customerName").value.trim();
+  return {
+    id:editId||newRecordId(),
+    doNumber:$("doNumber").value.trim(),
+    poNumber:$("poNumber").value.trim(),
+    customer,
+    companyId:companyIdFor(customer),
+    shipmentDate:$("shipmentDate").value,
+    vehicleNumber:$("vehicleNumber").value.trim(),
+    transportType:$("transportType").value,
+    expectedQty:num($("expectedQty").value),
+    actualQty:num($("actualQty").value),
+    staffName:$("staffName").value.trim(),
+    remarks:$("receivingRemarks").value.trim(),
+    arrivalTime:old?.arrivalTime||$("receivingForm").dataset.arrivalTime||"",
+    startTime:old?.startTime||$("receivingForm").dataset.startTime||"",
+    completionTime:old?.completionTime||$("receivingForm").dataset.completionTime||"",
+    createdAt:old?.createdAt||nowISO(),
+    updatedAt:nowISO(),
+    updatedBy:currentUser?.email||""
+  };
+}
+function validateReceiving(record,forStatus=false){
+  const missing=[];
+  if(!record.doNumber)missing.push("DO Number");
+  if(!record.poNumber)missing.push("PO Number");
+  if(!record.customer)missing.push("Company Name");
+  if(!record.shipmentDate)missing.push("Shipment Date");
+  if(!record.vehicleNumber)missing.push("Vehicle Number");
+  if(!record.transportType)missing.push("Transport Type");
+  if(!record.staffName)missing.push("Receiving Staff Name");
+  if($("expectedQty").value==="")missing.push("Expected Quantity");
+  if(missing.length){showError("receivingError","Please complete: "+missing.join(", "));return false;}
+  const duplicate=receivingRecords.some(r=>r.companyId===record.companyId&&r.doNumber.toLowerCase()===record.doNumber.toLowerCase()&&r.id!==record.id);
+  if(duplicate){showError("receivingError","Duplicate DO Number found for this company.");return false;}
+  if(forStatus&&record.completionTime){showError("receivingError","This record is already completed.");return false;}
+  hideError("receivingError"); return true;
+}
+async function saveReceivingRecord(record,quiet=false){
+  try{
+    await setDoc(doc(db,"receivings",record.id),{...record,updatedServerAt:serverTimestamp()},{merge:true});
+    if(!quiet)toast($("receivingEditId").value?"Receiving record updated.":"Receiving record saved.");
+    return true;
+  }catch(error){showError("receivingError",authErrorMessage(error));return false;}
+}
+function resetReceivingForm(){
+  $("receivingForm").reset();
+  $("receivingEditId").value="";
+  $("recordId").value=newRecordId();
+  $("shipmentDate").value=todayISO();
+  $("variance").value="0";
+  $("customerName").value=isAllCompanies()?"":activeCompany;
+  $("receivingForm").dataset.arrivalTime="";
+  $("receivingForm").dataset.startTime="";
+  $("receivingForm").dataset.completionTime="";
+  $("formStatusBadge").className="status-badge status-pending";
+  $("formStatusBadge").textContent="Pending";
+  $("timestampInfo").textContent="";
+  $("varianceWarning").classList.remove("show");
+  $("createDiscrepancyBtn").style.display="none";
+  hideError("receivingError");
+  stopTimer();
+  $("liveTimer").textContent="4-hour timer: Not started";
+  $("liveTimer").classList.remove("warning");
+  applyWorkspaceFormState();
+  updateStatusButtons();
+  updateCurrentDateTime();
+}
+function populateReceivingForm(record){
+  if(activeCompany!==record.customer)setActiveCompany(record.customer,false);
+  showSection("receiving");
+  $("receivingEditId").value=record.id;
+  $("recordId").value=record.id;
+  $("doNumber").value=record.doNumber;
+  $("poNumber").value=record.poNumber;
+  $("customerName").value=record.customer;
+  $("shipmentDate").value=record.shipmentDate;
+  $("vehicleNumber").value=record.vehicleNumber;
+  $("transportType").value=record.transportType;
+  $("expectedQty").value=record.expectedQty;
+  $("actualQty").value=record.actualQty;
+  $("staffName").value=record.staffName;
+  $("receivingRemarks").value=record.remarks||"";
+  $("receivingForm").dataset.arrivalTime=record.arrivalTime||"";
+  $("receivingForm").dataset.startTime=record.startTime||"";
+  $("receivingForm").dataset.completionTime=record.completionTime||"";
+  updateReceivingVariance();updateFormStatus(record);updateTimestampInfo(record);updateStatusButtons();startLiveTimerFor(record);
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function updateReceivingVariance(){
+  const v=variance($("expectedQty").value,$("actualQty").value);
+  $("variance").value=(v>0?"+":"")+v;
+  const active=$("actualQty").value!==""&&v!==0;
+  $("varianceWarning").classList.toggle("show",active);
+  $("createDiscrepancyBtn").style.display=active?"inline-flex":"none";
+}
+function updateFormStatus(record=getReceivingFormRecord()){
+  const status=baseStatus(record);
+  $("formStatusBadge").textContent=status;
+  $("formStatusBadge").className="status-badge "+statusClass(status);
+}
+function updateTimestampInfo(record=getReceivingFormRecord()){
+  const parts=[];
+  if(record.arrivalTime)parts.push("Arrived: "+fmtDateTime(record.arrivalTime));
+  if(record.startTime)parts.push("Started: "+fmtDateTime(record.startTime));
+  if(record.completionTime)parts.push("Completed: "+fmtDateTime(record.completionTime));
+  $("timestampInfo").textContent=parts.join(" | ");
+}
+function updateStatusButtons(){
+  const r=getReceivingFormRecord(),noCompany=isAllCompanies();
+  $("arrivedBtn").disabled=noCompany||!!r.arrivalTime;
+  $("startBtn").disabled=noCompany||!r.arrivalTime||!!r.startTime;
+  $("completeBtn").disabled=noCompany||!r.startTime||!!r.completionTime;
+  [$("arrivedBtn"),$("startBtn"),$("completeBtn")].forEach(b=>b.style.opacity=b.disabled?".55":"1");
+}
+function stopTimer(){if(timerInterval){clearInterval(timerInterval);timerInterval=null;}}
+function startLiveTimerFor(record){
+  stopTimer();
+  if(!record.arrivalTime||record.completionTime){
+    $("liveTimer").textContent=record.completionTime?`Total duration: ${formatDuration(durationMs(record))}`:"4-hour timer: Not started";
+    $("liveTimer").classList.toggle("warning",record.completionTime&&durationMs(record)>FOUR_HOURS_MS);
+    return;
+  }
+  const tick=()=>{
+    const remain=FOUR_HOURS_MS-durationMs(record);
+    if(remain>=0){$("liveTimer").textContent=`Time left: ${formatClock(remain)}`;$("liveTimer").classList.remove("warning");}
+    else{$("liveTimer").textContent=`Exceeded by: ${formatClock(Math.abs(remain))}`;$("liveTimer").classList.add("warning");}
+  };
+  tick();timerInterval=setInterval(tick,1000);
+}
+async function handleStatusAction(action){
+  let record=getReceivingFormRecord();
+  if(!validateReceiving(record,true))return;
+  if(action==="arrived"){
+    if(record.arrivalTime){toast("Arrival timestamp is locked.","warning");return;}
+    record.arrivalTime=nowISO();$("receivingForm").dataset.arrivalTime=record.arrivalTime;
+  }
+  if(action==="start"){
+    if(!record.arrivalTime){showError("receivingError","Click Arrived before Start Receiving.");return;}
+    if(record.startTime){toast("Receiving start time is already recorded.","warning");return;}
+    record.startTime=nowISO();$("receivingForm").dataset.startTime=record.startTime;
+  }
+  if(action==="complete"){
+    if(!record.startTime){showError("receivingError","Click Start Receiving before Complete.");return;}
+    if(record.completionTime){toast("Completion time is already recorded.","warning");return;}
+    if($("actualQty").value===""){showError("receivingError","Enter Actual Received Quantity before completing.");return;}
+    record.actualQty=num($("actualQty").value);
+    record.completionTime=nowISO();$("receivingForm").dataset.completionTime=record.completionTime;
+  }
+  record.updatedAt=nowISO();
+  if(!await saveReceivingRecord(record,true))return;
+  updateFormStatus(record);updateTimestampInfo(record);updateStatusButtons();startLiveTimerFor(record);
+  const status=baseStatus(record);
+  toast(action==="arrived"?"Arrival time recorded.":action==="start"?"Receiving started.":status==="Exceeded 4 Hours"?"Completed, but exceeded 4 hours.":"Receiving completed.",status==="Exceeded 4 Hours"?"warning":"success");
+}
+function filteredReceiving(useDashboard=false){
+  const p=useDashboard?"dashFilter":"recFilter";
+  const date=$(p+"Date")?.value||"",customer=($(p+"Customer")?.value||"").toLowerCase(),status=$(p+"Status")?.value||"",doNum=($(p+"DO")?.value||"").toLowerCase(),po=($(p+"PO")?.value||"").toLowerCase();
+  return receivingRecords.filter(r=>{
+    if(!belongsToWorkspace(r))return false;
+    const bs=baseStatus(r),disc=hasDiscrepancy(r);
+    return(!date||r.shipmentDate===date)&&(!customer||r.customer.toLowerCase().includes(customer))&&(!doNum||r.doNumber.toLowerCase().includes(doNum))&&(!po||r.poNumber.toLowerCase().includes(po))&&(!status||(status==="Discrepancy"?disc:bs===status));
+  });
+}
+function renderReceivingTable(){
+  const rows=filteredReceiving(false);
+  $("receivingCount").textContent=`${rows.length} record${rows.length===1?"":"s"}`;
+  $("receivingTableBody").innerHTML=rows.length?rows.map(r=>{
+    const v=variance(r.expectedQty,r.actualQty),bs=baseStatus(r);
+    return `<tr><td>${esc(r.id)}</td><td>${esc(r.shipmentDate)}</td><td><strong>${esc(r.doNumber)}</strong></td><td>${esc(r.poNumber)}</td><td>${esc(r.customer)}</td><td>${esc(r.vehicleNumber)}</td><td>${r.expectedQty}</td><td>${r.actualQty}</td><td style="font-weight:800;color:${v!==0?"var(--dark-red)":"inherit"}">${v>0?"+":""}${v}</td><td>${esc(fmtTime(r.arrivalTime))}</td><td>${esc(fmtTime(r.startTime))}</td><td>${esc(fmtTime(r.completionTime))}</td><td>${esc(r.completionTime?formatDuration(durationMs(r)):"-")}</td><td>${statusBadge(bs)} ${hasDiscrepancy(r)?statusBadge("Discrepancy"):""}</td><td><div class="action-group"><button class="icon-btn" data-action="view-rec" data-id="${r.id}" title="View">👁</button><button class="icon-btn" data-action="edit-rec" data-id="${r.id}" title="Edit">✏️</button><button class="icon-btn" data-action="print-rec" data-id="${r.id}" title="Print">🖨</button><button class="icon-btn" data-action="export-rec" data-id="${r.id}" title="Export">⬇</button><button class="icon-btn" data-action="delete-rec" data-id="${r.id}" title="Delete">🗑</button></div></td></tr>`;
+  }).join(""):`<tr class="empty-row"><td colspan="15">No receiving records found.</td></tr>`;
+}
+async function deleteReceiving(id){
+  const r=receivingRecords.find(x=>x.id===id);if(!r)return;
+  if(!confirm(`Delete receiving record ${r.doNumber}?`))return;
+  try{
+    const linked=discrepancyRecords.filter(d=>d.linkedReceivingId===id);
+    await Promise.all([deleteDoc(doc(db,"receivings",id)),...linked.map(d=>deleteDoc(doc(db,"discrepancies",d.id)))]);
+    resetReceivingForm();toast("Receiving record deleted.","warning");
+  }catch(error){toast(authErrorMessage(error),"warning");}
+}
+function createDiscrepancyFromReceiving(record){
+  showSection("discrepancy");resetDiscrepancyForm();
+  $("linkedReceivingId").value=record.id;
+  $("reportDate").value=record.shipmentDate||todayISO();
+  $("discDONumber").value=record.doNumber;
+  $("discPONumber").value=record.poNumber;
+  $("discCustomer").value=record.customer;
+  $("discExpectedQty").value=record.expectedQty;
+  $("discActualQty").value=record.actualQty;
+  $("personInCharge").value=record.staffName;
+  updateDiscrepancyVariance();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function getDiscrepancyFormRecord(){
+  const editId=$("discrepancyEditId").value;
+  const old=editId?discrepancyRecords.find(d=>d.id===editId):null;
+  const customer=$("discCustomer").value.trim();
+  return {
+    id:editId||newDiscrepancyId(),
+    linkedReceivingId:$("linkedReceivingId").value||old?.linkedReceivingId||"",
+    reportDate:$("reportDate").value,
+    doNumber:$("discDONumber").value.trim(),
+    poNumber:$("discPONumber").value.trim(),
+    customer,
+    companyId:companyIdFor(customer),
+    sku:$("sku").value.trim(),
+    productName:$("productName").value.trim(),
+    expectedQty:num($("discExpectedQty").value),
+    actualQty:num($("discActualQty").value),
+    issueType:$("issueType").value,
+    itemCondition:$("itemCondition").value,
+    actionTaken:$("actionTaken").value,
+    pic:$("personInCharge").value.trim(),
+    remarks:$("discRemarks").value.trim(),
+    photo:selectedPhotoData||old?.photo||"",
+    resolved:old?.resolved||false,
+    createdAt:old?.createdAt||nowISO(),
+    updatedAt:nowISO(),
+    updatedBy:currentUser?.email||""
+  };
+}
+function validateDiscrepancy(d){
+  const missing=[];
+  [["reportDate","Report Date"],["doNumber","DO Number"],["poNumber","PO Number"],["customer","Company Name"],["sku","SKU"],["productName","Product Name"],["issueType","Issue Type"],["itemCondition","Item Condition"],["actionTaken","Action Taken"],["pic","Person in Charge"]].forEach(([k,n])=>{if(!d[k])missing.push(n)});
+  if($("discExpectedQty").value==="")missing.push("Expected Quantity");
+  if($("discActualQty").value==="")missing.push("Actual Quantity");
+  if(missing.length){showError("discrepancyError","Please complete: "+missing.join(", "));return false;}
+  hideError("discrepancyError");return true;
+}
+function updateDiscrepancyVariance(){const v=variance($("discExpectedQty").value,$("discActualQty").value);$("discVariance").value=(v>0?"+":"")+v;}
+function resetDiscrepancyForm(){
+  $("discrepancyForm").reset();
+  $("discrepancyEditId").value="";
+  $("linkedReceivingId").value="";
+  $("reportDate").value=todayISO();
+  $("discCustomer").value=isAllCompanies()?"":activeCompany;
+  $("discVariance").value="0";
+  selectedPhotoData="";
+  $("photoStatus").textContent="";
+  hideError("discrepancyError");
+  $("discFormBadge").textContent="Unresolved";
+  $("discFormBadge").className="status-badge status-discrepancy";
+  applyWorkspaceFormState();
+}
+async function saveDiscrepancy(d){
+  try{
+    await setDoc(doc(db,"discrepancies",d.id),{...d,updatedServerAt:serverTimestamp()},{merge:true});
+    resetDiscrepancyForm();toast($("discrepancyEditId").value?"Discrepancy report updated.":"Discrepancy report saved.");
+    return true;
+  }catch(error){showError("discrepancyError",authErrorMessage(error));return false;}
+}
+function populateDiscrepancyForm(d){
+  if(activeCompany!==d.customer)setActiveCompany(d.customer,false);
+  showSection("discrepancy");
+  $("discrepancyEditId").value=d.id;
+  $("linkedReceivingId").value=d.linkedReceivingId||"";
+  $("reportDate").value=d.reportDate;
+  $("discDONumber").value=d.doNumber;
+  $("discPONumber").value=d.poNumber;
+  $("discCustomer").value=d.customer;
+  $("sku").value=d.sku;
+  $("productName").value=d.productName;
+  $("discExpectedQty").value=d.expectedQty;
+  $("discActualQty").value=d.actualQty;
+  $("issueType").value=d.issueType;
+  $("itemCondition").value=d.itemCondition;
+  $("actionTaken").value=d.actionTaken;
+  $("personInCharge").value=d.pic;
+  $("discRemarks").value=d.remarks||"";
+  selectedPhotoData=d.photo||"";
+  $("photoStatus").textContent=d.photo?"Existing photo attached.":"";
+  $("discFormBadge").textContent=d.resolved?"Resolved":"Unresolved";
+  $("discFormBadge").className="status-badge "+statusClass(d.resolved?"Resolved":"Unresolved");
+  updateDiscrepancyVariance();window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderDiscrepancyTable(){
+  const rows=workspaceDiscrepancyRecords();
+  $("discrepancyCount").textContent=`${rows.length} case${rows.length===1?"":"s"}`;
+  $("discrepancyTableBody").innerHTML=rows.length?rows.map(d=>{
+    const v=variance(d.expectedQty,d.actualQty);
+    return `<tr><td>${esc(d.reportDate)}</td><td><strong>${esc(d.doNumber)}</strong></td><td>${esc(d.poNumber)}</td><td>${esc(d.customer)}</td><td>${esc(d.sku)}</td><td>${esc(d.productName)}</td><td>${d.expectedQty}</td><td>${d.actualQty}</td><td style="font-weight:800;color:var(--dark-red)">${v>0?"+":""}${v}</td><td>${esc(d.issueType)}</td><td>${esc(d.itemCondition)}</td><td>${esc(d.actionTaken)}</td><td>${esc(d.pic)}</td><td>${statusBadge(d.resolved?"Resolved":"Unresolved")}</td><td><div class="action-group"><button class="icon-btn" data-action="view-disc" data-id="${d.id}" title="View">👁</button><button class="icon-btn" data-action="edit-disc" data-id="${d.id}" title="Edit">✏️</button><button class="icon-btn" data-action="resolve-disc" data-id="${d.id}" title="Mark resolved">✅</button><button class="icon-btn" data-action="print-disc" data-id="${d.id}" title="Print">🖨</button><button class="icon-btn" data-action="delete-disc" data-id="${d.id}" title="Delete">🗑</button></div></td></tr>`;
+  }).join(""):`<tr class="empty-row"><td colspan="15">No discrepancy reports found.</td></tr>`;
+}
+async function deleteDiscrepancy(id){
+  const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;
+  if(!confirm(`Delete discrepancy report for ${d.doNumber}?`))return;
+  try{await deleteDoc(doc(db,"discrepancies",id));toast("Discrepancy report deleted.","warning");}
+  catch(error){toast(authErrorMessage(error),"warning");}
+}
+async function toggleResolved(id){
+  const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;
+  try{await updateDoc(doc(db,"discrepancies",id),{resolved:!d.resolved,updatedAt:nowISO(),updatedBy:currentUser.email,updatedServerAt:serverTimestamp()});}
+  catch(error){toast(authErrorMessage(error),"warning");}
+}
+function renderDashboard(){
+  const rows=filteredReceiving(true),today=todayISO(),todayRows=rows.filter(r=>r.shipmentDate===today);
+  const pending=rows.filter(r=>baseStatus(r)==="Pending").length;
+  const arrived=rows.filter(r=>baseStatus(r)==="Arrived").length;
+  const receiving=rows.filter(r=>baseStatus(r)==="Receiving").length;
+  const completed=rows.filter(r=>["Completed","Exceeded 4 Hours"].includes(baseStatus(r))).length;
+  const within=rows.filter(r=>baseStatus(r)==="Completed").length;
+  const exceeded=rows.filter(r=>baseStatus(r)==="Exceeded 4 Hours").length;
+  const completedRows=rows.filter(r=>r.completionTime);
+  const avg=completedRows.length?completedRows.reduce((a,r)=>a+durationMs(r),0)/completedRows.length:0;
+  const relatedDOs=new Set(rows.map(r=>r.doNumber.toLowerCase()));
+  const filterActive=["dashFilterDate","dashFilterCustomer","dashFilterStatus","dashFilterDO","dashFilterPO"].some(id=>$(id).value);
+  const workspaceDisc=workspaceDiscrepancyRecords();
+  const disc=filterActive?workspaceDisc.filter(d=>relatedDOs.has(d.doNumber.toLowerCase())):workspaceDisc;
+  const unresolved=disc.filter(d=>!d.resolved).length;
+  const stats=[["Total Shipments Today",todayRows.length,"📦","Today only"],["Pending Shipments",pending,"⏳","Not arrived"],["Arrived Shipments",arrived,"🚚","Waiting to receive"],["Currently Receiving",receiving,"🔄","In progress"],["Completed Shipments",completed,"✅","All completed"],["Within 4 Hours",within,"🟢","Target achieved"],["Exceeded 4 Hours",exceeded,"🔴","Needs review"],["Total Discrepancies",disc.length,"⚠️","All cases"],["Unresolved Cases",unresolved,"🛑","Action required"],["Average Duration",avg?formatDuration(avg):"-","⏱","Completed records"]];
+  $("statsGrid").innerHTML=stats.map(([l,v,i,n])=>`<div class="card stat-card"><div class="stat-icon">${i}</div><div class="stat-label">${l}</div><div class="stat-value">${v}</div><div class="stat-note">${n}</div></div>`).join("");
+  $("todaySummary").innerHTML=[["Total Expected Qty",todayRows.reduce((a,r)=>a+num(r.expectedQty),0)],["Total Actual Qty",todayRows.reduce((a,r)=>a+num(r.actualQty),0)],["Today Variance",todayRows.reduce((a,r)=>a+variance(r.expectedQty,r.actualQty),0)],["Completion Rate",todayRows.length?Math.round(todayRows.filter(r=>r.completionTime).length/todayRows.length*100)+"%":"0%"],["Open Discrepancies",workspaceDiscrepancyRecords().filter(d=>d.reportDate===today&&!d.resolved).length]].map(([l,v])=>`<div class="summary-item"><span>${l}</span><strong>${v}</strong></div>`).join("");
+  drawChart();
+}
+function drawChart(){
+  const canvas=$("dailyChart"),ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();
+  canvas.width=Math.max(600,rect.width*dpr);canvas.height=300*dpr;ctx.scale(dpr,dpr);
+  const W=canvas.width/dpr,H=canvas.height/dpr;ctx.clearRect(0,0,W,H);
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d);}
+  const vals=days.map(d=>workspaceReceivingRecords().filter(r=>r.shipmentDate===localDateISO(d)).length),max=Math.max(1,...vals),pad={l:38,r:18,t:20,b:42},cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  ctx.strokeStyle="#dbe3ef";ctx.lineWidth=1;ctx.font="12px Segoe UI";ctx.fillStyle="#6c7a90";
+  for(let i=0;i<=4;i++){const y=pad.t+ch*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();ctx.fillText(String(Math.round(max*(4-i)/4)),4,y+4);}
+  const slot=cw/7,bar=Math.min(54,slot*.58);
+  vals.forEach((v,i)=>{const x=pad.l+slot*i+(slot-bar)/2,h=v/max*ch,y=pad.t+ch-h;const grad=ctx.createLinearGradient(0,y,0,pad.t+ch);grad.addColorStop(0,"#0b63ce");grad.addColorStop(1,"#6baeff");ctx.fillStyle=grad;ctx.fillRect(x,y,bar,h);ctx.fillStyle="#172033";ctx.textAlign="center";ctx.font="700 12px Segoe UI";ctx.fillText(String(v),x+bar/2,Math.max(13,y-6));ctx.fillStyle="#6c7a90";ctx.font="11px Segoe UI";ctx.fillText(days[i].toLocaleDateString("en-GB",{day:"2-digit",month:"short"}),x+bar/2,H-16);});
+  ctx.textAlign="left";
+}
+function detailHTML(obj,type){
+  const fields=type==="receiving"?[["Record ID",obj.id],["Shipment Date",obj.shipmentDate],["DO Number",obj.doNumber],["PO Number",obj.poNumber],["Customer",obj.customer],["Vehicle Number",obj.vehicleNumber],["Transport Type",obj.transportType],["Expected Qty",obj.expectedQty],["Actual Qty",obj.actualQty],["Variance",variance(obj.expectedQty,obj.actualQty)],["Staff",obj.staffName],["Arrival Time",fmtDateTime(obj.arrivalTime)],["Start Time",fmtDateTime(obj.startTime)],["Completion Time",fmtDateTime(obj.completionTime)],["Total Duration",obj.completionTime?formatDuration(durationMs(obj)):"-"],["Status",baseStatus(obj)],["Remarks",obj.remarks||"-"]]:[["Report ID",obj.id],["Report Date",obj.reportDate],["DO Number",obj.doNumber],["PO Number",obj.poNumber],["Customer",obj.customer],["SKU",obj.sku],["Product Name",obj.productName],["Expected Qty",obj.expectedQty],["Actual Qty",obj.actualQty],["Variance",variance(obj.expectedQty,obj.actualQty)],["Issue Type",obj.issueType],["Item Condition",obj.itemCondition],["Action Taken",obj.actionTaken],["Person in Charge",obj.pic],["Status",obj.resolved?"Resolved":"Unresolved"],["Remarks",obj.remarks||"-"]];
+  let html=`<div class="detail-grid">${fields.map(([l,v])=>`<div class="detail-item"><small>${esc(l)}</small><div>${esc(v)}</div></div>`).join("")}</div>`;
+  if(type==="discrepancy"&&obj.photo)html+=`<div class="detail-item" style="margin-top:12px"><small>Photo</small><img class="photo-preview" src="${obj.photo}" alt="Discrepancy photo"></div>`;
+  return html;
+}
+function openDetail(obj,type){$("modalTitle").textContent=type==="receiving"?"Receiving Record Details":"Discrepancy Report Details";$("modalBody").innerHTML=detailHTML(obj,type);$("detailModal").classList.add("show");}
+function printRecord(obj,type){
+  const win=window.open("","_blank","width=900,height=700");
+  win.document.write(`<html><head><title>Warehouse Receiving</title><style>body{font-family:Arial;padding:28px;color:#172033}h1{color:#0b63ce;border-bottom:2px solid #0b63ce;padding-bottom:10px}.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.detail-item{border:1px solid #ddd;padding:10px;border-radius:6px}.detail-item small{display:block;color:#666;font-weight:bold;margin-bottom:5px}img{max-width:100%;max-height:350px}</style></head><body><h1>${type==="receiving"?"Warehouse Receiving Record":"Warehouse Discrepancy Report"}</h1>${detailHTML(obj,type)}<script>window.onload=()=>window.print()<\/script></body></html>`);win.document.close();
+}
+function csvCell(v){const s=String(v??"");return /[",\n]/.test(s)?`"${s.replaceAll('"','""')}"`:s;}
+function downloadCSV(name,headers,rows){const csv=[headers,...rows].map(r=>r.map(csvCell).join(",")).join("\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);}
+function exportReceiving(records=filteredReceiving(false)){downloadCSV(`warehouse_receiving_${safeFilePart(workspaceName())}.csv`,["Record ID","Shipment Date","DO Number","PO Number","Customer","Vehicle Number","Transport Type","Expected Qty","Actual Qty","Variance","Staff","Arrival Time","Receiving Start Time","Completion Time","Total Duration","Status","Remarks"],records.map(r=>[r.id,r.shipmentDate,r.doNumber,r.poNumber,r.customer,r.vehicleNumber,r.transportType,r.expectedQty,r.actualQty,variance(r.expectedQty,r.actualQty),r.staffName,fmtDateTime(r.arrivalTime),fmtDateTime(r.startTime),fmtDateTime(r.completionTime),r.completionTime?formatDuration(durationMs(r)):"",baseStatus(r),r.remarks]));}
+function exportDiscrepancies(){const records=workspaceDiscrepancyRecords();downloadCSV(`warehouse_discrepancy_${safeFilePart(workspaceName())}.csv`,["Report Date","DO Number","PO Number","Customer","SKU","Product","Expected","Actual","Variance","Issue","Condition","Action","PIC","Status","Remarks"],records.map(d=>[d.reportDate,d.doNumber,d.poNumber,d.customer,d.sku,d.productName,d.expectedQty,d.actualQty,variance(d.expectedQty,d.actualQty),d.issueType,d.itemCondition,d.actionTaken,d.pic,d.resolved?"Resolved":"Unresolved",d.remarks]));}
+function refreshDatalists(){
+  $("customerList").innerHTML=COMPANIES.map(x=>`<option value="${esc(x)}">`).join("");
+  const staff=[...new Set(receivingRecords.map(r=>r.staffName).filter(Boolean))].sort();
+  $("staffList").innerHTML=staff.map(x=>`<option value="${esc(x)}">`).join("");
+}
+function applyWorkspaceFormState(){
+  const noCompany=isAllCompanies();
+  $("receivingCompanyWarning").classList.toggle("show",noCompany);
+  $("discrepancyCompanyWarning").classList.toggle("show",noCompany);
+  $("receivingForm").querySelector('button[type="submit"]').disabled=noCompany;
+  $("discrepancyForm").querySelector('button[type="submit"]').disabled=noCompany;
+  if(noCompany){$("customerName").value="";$("discCustomer").value="";$("createDiscrepancyBtn").style.display="none";}
+  else{
+    if(!$("receivingEditId").value)$("customerName").value=activeCompany;
+    if(!$("discrepancyEditId").value)$("discCustomer").value=activeCompany;
+  }
+}
+function updateWorkspaceUI(){
+  const name=workspaceName();
+  $("companyWorkspace").value=activeCompany;
+  $("companyWorkspace").disabled=currentUser?.role==="client";
+  $("currentCompanyLabel").textContent=name;
+  $("workspaceBannerName").textContent=name;
+  $("receivingWorkspaceLabel").textContent=name;
+  $("discrepancyWorkspaceLabel").textContent=name;
+  $("workspaceModeText").textContent=isAllCompanies()?"Combined management view. Select one company before entering a new record.":`Only ${name} records are shown.`;
+  $("clearWorkspaceBtn").textContent=isAllCompanies()?"🗑 Select Company to Clear":`🗑 Clear ${name} Data`;
+  $("dashFilterCustomer").disabled=!isAllCompanies();
+  $("recFilterCustomer").disabled=!isAllCompanies();
+  if(!isAllCompanies()){$("dashFilterCustomer").value="";$("recFilterCustomer").value="";}
+  applyWorkspaceFormState();
+}
+function setActiveCompany(company,resetForms=true){
+  if(currentUser?.role==="client")company=currentUser.companyName;
+  if(company!==ALL_COMPANIES&&!COMPANIES.includes(company))return;
+  activeCompany=company;localStorage.setItem(ACTIVE_COMPANY_KEY,activeCompany);
+  updateWorkspaceUI();
+  if(resetForms){resetReceivingForm();resetDiscrepancyForm();}
+  renderReceivingTable();renderDiscrepancyTable();renderDashboard();
+}
+async function compressImage(file){
+  if(!file.type.startsWith("image/"))throw new Error("Please select an image file.");
+  const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});
+  const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=dataUrl;});
+  const max=1100,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement("canvas");
+  canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+  canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+  const out=canvas.toDataURL("image/jpeg",.68);
+  if(out.length>750000)throw new Error("Image is still too large. Please use a smaller photo.");
+  return out;
+}
+function renderAccounts(){
+  if(!isAdmin())return;
+  const q=$("accountSearch").value.trim().toLowerCase();
+  const rows=accounts.filter(a=>!q||[a.email,a.displayName,a.role,a.companyName,a.companyId].join(" ").toLowerCase().includes(q));
+  $("accountTableBody").innerHTML=rows.length?rows.map(a=>`<tr><td><strong>${esc(a.email||"-")}</strong></td><td>${esc(a.displayName||"-")}</td><td>${esc(a.role)}</td><td>${esc(a.role==="client"?(a.companyName||companyNameFromId(a.companyId)):"All Companies")}</td><td>${a.active?"Active":"Disabled"}</td><td><div class="account-tools"><button class="btn btn-sm btn-outline" data-account-action="copy" data-uid="${a.uid}">Copy</button><button class="btn btn-sm btn-secondary" data-account-action="reset" data-uid="${a.uid}">Reset Password</button>${a.uid!==currentUser.uid?`<button class="btn btn-sm ${a.active?"btn-danger":"btn-success"}" data-account-action="toggle" data-uid="${a.uid}">${a.active?"Disable":"Enable"}</button>`:""}</div></td></tr>`).join(""):`<tr><td colspan="6">No accounts found.</td></tr>`;
+}
+async function createOnlineAccount(email,password,displayName,role,companyName){
+  let secondary=null;
+  try{
+    secondary=initializeApp(firebaseConfig,"accountCreator-"+Date.now());
+    const secondaryAuth=getAuth(secondary);
+    const cred=await createUserWithEmailAndPassword(secondaryAuth,email,password);
+    const companyId=role==="client"?companyIdFor(companyName):"ALL";
+    await setDoc(doc(db,"users",cred.user.uid),{
+      email,displayName,role,companyId,companyName:role==="client"?companyName:"All Companies",active:true,createdAt:nowISO(),createdBy:currentUser.email
+    });
+    await signOut(secondaryAuth);
+    return cred.user.uid;
+  }finally{if(secondary)await deleteApp(secondary).catch(()=>{});}
+}
+async function clearWorkspaceData(name){
+  const rec=receivingRecords.filter(r=>r.customer===name),disc=discrepancyRecords.filter(d=>d.customer===name);
+  await Promise.all([...rec.map(r=>deleteDoc(doc(db,"receivings",r.id))),...disc.map(d=>deleteDoc(doc(db,"discrepancies",d.id)))]);
+}
+async function clearAllData(){
+  await Promise.all([...receivingRecords.map(r=>deleteDoc(doc(db,"receivings",r.id))),...discrepancyRecords.map(d=>deleteDoc(doc(db,"discrepancies",d.id)))]);
+}
+
+/* Events */
+$("companyWorkspace").addEventListener("change",e=>setActiveCompany(e.target.value));
+document.querySelectorAll(".nav-btn[data-section]").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.section)));
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.go)));
+$("mobileMenu").addEventListener("click",()=>$("sidebar").classList.toggle("open"));
+$("closeModal").addEventListener("click",()=>$("detailModal").classList.remove("show"));
+$("detailModal").addEventListener("click",e=>{if(e.target===$("detailModal"))$("detailModal").classList.remove("show");});
+$("expectedQty").addEventListener("input",updateReceivingVariance);
+$("actualQty").addEventListener("input",updateReceivingVariance);
+$("discExpectedQty").addEventListener("input",updateDiscrepancyVariance);
+$("discActualQty").addEventListener("input",updateDiscrepancyVariance);
+$("arrivedBtn").addEventListener("click",()=>requireEditor()&&handleStatusAction("arrived"));
+$("startBtn").addEventListener("click",()=>requireEditor()&&handleStatusAction("start"));
+$("completeBtn").addEventListener("click",()=>requireEditor()&&handleStatusAction("complete"));
+
+$("receivingForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!requireEditor())return;
+  const r=getReceivingFormRecord();if(!validateReceiving(r))return;
+  if(await saveReceivingRecord(r))resetReceivingForm();
+});
+$("discrepancyForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!requireEditor())return;
+  const d=getDiscrepancyFormRecord();if(!validateDiscrepancy(d))return;
+  await saveDiscrepancy(d);
+});
+$("resetReceivingBtn").addEventListener("click",resetReceivingForm);
+$("resetDiscrepancyBtn").addEventListener("click",resetDiscrepancyForm);
+$("createDiscrepancyBtn").addEventListener("click",async()=>{
+  if(!requireEditor())return;
+  const r=getReceivingFormRecord();if(!validateReceiving(r))return;
+  if(await saveReceivingRecord(r,true))createDiscrepancyFromReceiving(r);
+});
+$("exportReceivingBtn").addEventListener("click",()=>exportReceiving(filteredReceiving(false)));
+$("exportDiscrepancyBtn").addEventListener("click",exportDiscrepancies);
+$("refreshDashboardBtn").addEventListener("click",renderDashboard);
+$("clearWorkspaceBtn").addEventListener("click",async()=>{
+  if(!requireEditor())return;
+  if(isAllCompanies()){toast("Select one company first.","warning");return;}
+  if(!confirm(`Delete ALL online data for ${activeCompany}?`))return;
+  if(!confirm("Final warning: this cannot be undone."))return;
+  try{await clearWorkspaceData(activeCompany);resetReceivingForm();resetDiscrepancyForm();toast(`${activeCompany} data cleared.`,"warning");}
+  catch(error){toast(authErrorMessage(error),"warning");}
+});
+$("clearAllBtn").addEventListener("click",async()=>{
+  if(!isAdmin()){toast("Admin access required.","warning");return;}
+  if(!confirm("Delete ALL receiving and discrepancy data for ALL companies?"))return;
+  if(!confirm("Final warning: this cannot be undone."))return;
+  try{await clearAllData();resetReceivingForm();resetDiscrepancyForm();toast("All company data cleared.","warning");}
+  catch(error){toast(authErrorMessage(error),"warning");}
+});
+["recFilterDate","recFilterCustomer","recFilterStatus","recFilterDO","recFilterPO"].forEach(id=>$(id).addEventListener("input",renderReceivingTable));
+["dashFilterDate","dashFilterCustomer","dashFilterStatus","dashFilterDO","dashFilterPO"].forEach(id=>$(id).addEventListener("input",renderDashboard));
+$("resetReceivingFilters").addEventListener("click",()=>{["recFilterDate","recFilterCustomer","recFilterStatus","recFilterDO","recFilterPO"].forEach(id=>$(id).value="");renderReceivingTable();});
+$("resetDashboardFilters").addEventListener("click",()=>{["dashFilterDate","dashFilterCustomer","dashFilterStatus","dashFilterDO","dashFilterPO"].forEach(id=>$(id).value="");renderDashboard();});
+$("receivingTableBody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-action]");if(!b)return;
+  const r=receivingRecords.find(x=>x.id===b.dataset.id);if(!r)return;
+  const a=b.dataset.action;
+  if(a==="view-rec")openDetail(r,"receiving");
+  if(a==="edit-rec"&&requireEditor())populateReceivingForm(r);
+  if(a==="delete-rec"&&requireEditor())deleteReceiving(r.id);
+  if(a==="print-rec")printRecord(r,"receiving");
+  if(a==="export-rec")exportReceiving([r]);
+});
+$("discrepancyTableBody").addEventListener("click",e=>{
+  const b=e.target.closest("[data-action]");if(!b)return;
+  const d=discrepancyRecords.find(x=>x.id===b.dataset.id);if(!d)return;
+  const a=b.dataset.action;
+  if(a==="view-disc")openDetail(d,"discrepancy");
+  if(a==="edit-disc"&&requireEditor())populateDiscrepancyForm(d);
+  if(a==="delete-disc"&&requireEditor())deleteDiscrepancy(d.id);
+  if(a==="resolve-disc"&&requireEditor())toggleResolved(d.id);
+  if(a==="print-disc")printRecord(d,"discrepancy");
+});
+$("photoUpload").addEventListener("change",async e=>{
+  const file=e.target.files[0];if(!file){selectedPhotoData="";$("photoStatus").textContent="";return;}
+  try{selectedPhotoData=await compressImage(file);$("photoStatus").textContent="Photo compressed and ready.";hideError("discrepancyError");}
+  catch(error){e.target.value="";selectedPhotoData="";showError("discrepancyError",error.message);}
+});
+window.addEventListener("resize",()=>{$("dashboardSection").classList.contains("active")&&drawChart();});
+setInterval(updateCurrentDateTime,1000);
+
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  hideError("loginError");
+  try{await signInWithEmailAndPassword(auth,$("loginId").value.trim(),$("loginPassword").value);}
+  catch(error){showError("loginError",authErrorMessage(error));}
+});
+$("logoutBtn").addEventListener("click",()=>confirm("Logout from this application?")&&logout());
+$("manageAccountsBtn").addEventListener("click",()=>{if(!isAdmin())return;renderAccounts();$("accountsModal").classList.add("show");});
+$("closeAccountsModal").addEventListener("click",()=>$("accountsModal").classList.remove("show"));
+$("accountsModal").addEventListener("click",e=>{if(e.target===$("accountsModal"))$("accountsModal").classList.remove("show");});
+$("accountSearch").addEventListener("input",renderAccounts);
+$("newAccountRole").addEventListener("change",()=>{
+  const client=$("newAccountRole").value==="client";
+  $("newAccountCompany").disabled=!client;
+  if(!client)$("newAccountCompany").value="";
+});
+$("createAccountForm").addEventListener("submit",async e=>{
+  e.preventDefault();if(!isAdmin())return;
+  hideError("accountError");
+  const email=$("newAccountEmail").value.trim().toLowerCase(),password=$("newAccountPassword").value,displayName=$("newAccountName").value.trim(),role=$("newAccountRole").value,company=$("newAccountCompany").value;
+  if(role==="client"&&!company){showError("accountError","Select a company for the client.");return;}
+  try{
+    await createOnlineAccount(email,password,displayName,role,company);
+    const details=`Warehouse Receiving Sheet\nEmail: ${email}\nTemporary Password: ${password}\nCompany: ${role==="client"?company:"All Companies"}\nRole: ${role}`;
+    navigator.clipboard?.writeText(details).catch(()=>{});
+    $("createAccountForm").reset();$("newAccountCompany").disabled=false;
+    toast("Login created. Details copied to clipboard.");
+  }catch(error){showError("accountError",authErrorMessage(error));}
+});
+$("accountTableBody").addEventListener("click",async e=>{
+  const b=e.target.closest("[data-account-action]");if(!b||!isAdmin())return;
+  const acc=accounts.find(a=>a.uid===b.dataset.uid);if(!acc)return;
+  if(b.dataset.accountAction==="copy"){
+    const text=`Warehouse Receiving Sheet\nEmail: ${acc.email}\nCompany: ${acc.role==="client"?(acc.companyName||companyNameFromId(acc.companyId)):"All Companies"}\nRole: ${acc.role}`;
+    navigator.clipboard?.writeText(text).then(()=>toast("Login information copied.")).catch(()=>prompt("Copy:",text));
+  }
+  if(b.dataset.accountAction==="reset"){
+    try{await sendPasswordResetEmail(auth,acc.email);toast("Password reset email sent.");}
+    catch(error){toast(authErrorMessage(error),"warning");}
+  }
+  if(b.dataset.accountAction==="toggle"){
+    try{await updateDoc(doc(db,"users",acc.uid),{active:!acc.active,updatedAt:nowISO(),updatedBy:currentUser.email});}
+    catch(error){toast(authErrorMessage(error),"warning");}
+  }
+});
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){
+    stopSubscriptions();currentUser=null;document.body.className="logged-out";return;
+  }
+  try{await openUserSession(user);}
+  catch(error){showError("loginError",error.message);document.body.className="logged-out";}
+});
+
+updateWorkspaceUI();resetReceivingForm();resetDiscrepancyForm();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();
+</script>
+
+</body>
+</html>
