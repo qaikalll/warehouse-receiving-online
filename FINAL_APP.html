@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Warehouse Receiving Sheet — FINAL Online App</title>
+<!-- FORCE NEW GITHUB RELEASE 20260807-v3 -->
+
+<link href="./manifest-final-20260807-v3.webmanifest?v=20260807-v3" rel="manifest"/>
+<meta content="#17264a" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="WRS" name="apple-mobile-web-app-title"/>
+<link href="./icon-final-20260807-v3.svg?v=20260807-v3" rel="apple-touch-icon"/>
+<link href="./app-final-20260807-v3.css?v=20260807-v3" rel="stylesheet"/><script defer="True" src="./branding-final-20260807-v3.js?v=20260807-v3"></script></head>
+<body class="logged-out">
+<div class="login-screen" id="loginScreen">
+<div class="login-card">
+<div class="login-logo"><img alt="GOS Fulfilment" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="/></div>
+<h2>Warehouse Receiving Sheet</h2>
+<p>Sign in to open your secure online company workspace.</p>
+<div class="login-error" id="loginError"></div>
+<form id="loginForm">
+<div class="field"><label>Login ID or Email</label><input autocapitalize="none" autocomplete="username" id="loginId" placeholder="Example: admin, airali or email" spellcheck="false" type="text"/></div>
+<div class="field"><label>Password</label><input autocomplete="current-password" id="loginPassword" placeholder="Enter password" type="password"/></div>
+<button class="btn btn-primary" type="submit">🔐 Sign In</button>
+</form>
+<div class="login-help"><strong>First admin login:</strong> admin / Admin@2026<br/><span style="opacity:.82">Client may use company Login ID (example: airali) or the Firebase email given by admin.</span></div>
+</div>
+</div>
+<div class="app-shell">
+<header class="topbar">
+<div class="brand">
+<button aria-expanded="false" aria-label="Open navigation menu" class="mobile-menu" id="mobileMenu"><span aria-hidden="true" class="hamburger-lines"><span></span><span></span><span></span></span></button>
+<div aria-label="Warehouse system logo" class="brand-icon" id="brandLogoSlot">
+<img alt="GOS Fulfilment" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="/>
+</div>
+<div>
+<h1>Warehouse Receiving Sheet</h1>
+<p>Receiving operations and company client portal</p>
+</div>
+</div>
+<div class="top-actions">
+<div class="current-company-pill"><span id="currentCompanyLabel">Airali</span></div>
+<div class="target-pill">Target: Complete within 4 hours</div>
+<button aria-label="Switch theme mode" class="theme-toggle" id="themeToggleBtn" title="Switch theme mode" type="button"><span aria-hidden="true" class="theme-toggle-icon">🌙</span><span class="theme-toggle-label">Night Mode</span></button>
+<button aria-label="Install app" class="install-app-btn" id="installAppBtn" title="Install app" type="button"><span aria-hidden="true">⬇</span><span class="install-label">Download App</span></button>
+<button aria-label="Open guided tutorial" class="guide-launch" id="tutorialHelpBtn" type="button"><svg aria-hidden="true" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M9.8 9a2.4 2.4 0 1 1 3.8 1.9c-1 .7-1.6 1.1-1.6 2.6M12 17h.01"></path></svg><span>Guide</span></button>
+<div class="user-pill"><span id="signedInUser">Not signed in</span><button id="logoutBtn" type="button">Logout</button></div>
+</div>
+</header>
+<div class="menu-backdrop" id="menuBackdrop"></div>
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-head"><strong>Navigation</strong><button aria-label="Close navigation menu" class="sidebar-close" id="sidebarCloseBtn" type="button">×</button></div>
+<div class="workspace-card">
+<label for="companyWorkspace">Company Workspace</label>
+<select aria-label="Select company workspace" id="companyWorkspace">
+<option value="__ALL__">All Companies</option>
+<option value="Airali">Airali</option>
+<option value="UCMAS">UCMAS</option>
+<option value="Alard">Alard</option>
+<option value="Zucca">Zucca</option>
+<option value="Audrey">Audrey</option>
+<option value="BUM">BUM</option>
+<option value="AvantHealth">AvantHealth</option>
+<option value="BeastKingdom">BeastKingdom</option>
+<option value="Commbax">Commbax</option>
+<option value="CoyaCozy">CoyaCozy</option>
+<option value="Beoka">Beoka</option>
+<option value="DiademSports">DiademSports</option>
+<option value="GalaxySports">GalaxySports</option>
+<option value="Warrix001-B2C">Warrix001-B2C</option>
+<option value="Warrix002-B2B">Warrix002-B2B</option>
+<option value="VictorSports">VictorSports</option>
+<option value="Mills">Mills</option>
+<option value="DouDouTrading">DouDouTrading</option>
+<option value="EarthHome">EarthHome</option>
+<option value="EarthNMe">EarthNMe</option>
+<option value="HarmanKardon">HarmanKardon</option>
+<option value="Marna/Mare">Marna/Mare</option>
+<option value="MYNT">MYNT</option>
+<option value="OGAWA">OGAWA</option>
+<option value="Jacko">Jacko</option>
+<option value="Kimma">Kimma</option>
+<option value="LaMaison">LaMaison</option>
+<option value="Lert">Lert</option>
+<option value="Darizi">Darizi</option>
+<option value="Miseoul-KMT">Miseoul-KMT</option>
+<option value="MonoDigital">MonoDigital</option>
+<option value="Morveen">Morveen</option>
+<option value="Quka">Quka</option>
+<option value="Peacock">Peacock</option>
+<option value="Roofless">Roofless</option>
+<option value="SammoorBeauty">SammoorBeauty</option>
+<option value="Skinville">Skinville</option>
+<option value="Yondson">Yondson</option>
+<option value="Trainix">Trainix</option>
+<option value="KSM">KSM</option>
+<option value="MJM">MJM</option>
+<option value="RevEdition (HOKA)">RevEdition (HOKA)</option>
+<option value="SerbaWangi">SerbaWangi</option>
+<option value="NexGen">NexGen</option>
+<option value="ECCIATO">ECCIATO</option>
+<option value="Golden Choice">Golden Choice</option>
+<option value="Tong Kee">Tong Kee</option>
+<option value="MUSE">MUSE</option>
+<option value="PIXX">PIXX</option>
+<option value="Showtv">Showtv</option>
+</select>
+<div class="workspace-note">Dashboard, tables, reports and exports follow the selected company.</div>
+<div class="company-admin-tools" id="companyAdminTools">
+<button class="add-company-btn" id="addCompanyBtn" type="button">＋ Add New Company</button>
+<div class="add-company-panel" id="addCompanyPanel">
+<label for="newCompanyName">New Company Name</label>
+<input autocomplete="off" id="newCompanyName" maxlength="80" placeholder="Example: New Client Sdn. Bhd."/>
+<div class="company-add-error" id="companyAddError"></div>
+<div class="add-company-actions">
+<button class="btn btn-primary" id="saveNewCompanyBtn" type="button">Add Company</button>
+<button class="btn btn-secondary" id="cancelNewCompanyBtn" type="button">Cancel</button>
+</div>
+<div class="company-login-result" id="companyLoginResult"></div>
+</div>
+</div>
+</div>
+<button class="nav-btn active" data-section="dashboard"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-13h6V4h-6v3Z"></path></svg></span>Dashboard</button>
+<button class="nav-btn" data-section="booking"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Zm3 8h3v3H8v-3Z"></path></svg></span>Shipment Booking</button>
+<button class="nav-btn" data-section="receiving"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m4 8 8-4 8 4v9l-8 4-8-4V8Zm0 0 8 4 8-4m-8 4v9M8 6l8 4"></path></svg></span>Receiving Sheet</button>
+<button class="nav-btn" data-section="discrepancy"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"></path></svg></span>Discrepancy Report</button>
+<button class="nav-btn admin-only" id="manageAccountsBtn" type="button"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-6 9c0-4 2.7-6 6-6 1.3 0 2.5.3 3.4.9M17 12v-2a2 2 0 1 0-4 0v2m-1 0h6v7h-6v-7Z"></path></svg></span>Manage Logins</button>
+<div class="sidebar-footer">
+<button class="danger-outline" id="clearWorkspaceBtn">Clear Company Data</button>
+<button class="danger-outline" id="clearAllBtn">Clear All Companies</button>
+</div>
+</aside>
+<main class="main">
+<div class="card workspace-banner">
+<div>Viewing workspace: <strong id="workspaceBannerName">Airali</strong></div>
+<div class="workspace-mode" id="workspaceModeText">Only Airali records are shown.</div>
+</div>
+<section class="section active" id="dashboardSection">
+<div class="section-head">
+<div>
+<h2>Dashboard</h2>
+<p>Daily warehouse receiving performance overview.</p>
+</div>
+<div class="toolbar">
+<button class="btn btn-outline" id="refreshDashboardBtn">↻ Refresh</button>
+<button class="btn btn-primary" data-go="receiving">＋ New Receiving</button>
+</div>
+</div>
+<div class="card filter-card">
+<input id="dashFilterCustomer" type="hidden" value=""/>
+<div class="filter-grid dashboard-filter-grid">
+<div class="field"><label>Date</label><input id="dashFilterDate" type="date"/></div>
+<div class="field"><label>Status</label>
+<select id="dashFilterStatus">
+<option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option>
+</select>
+</div>
+<div class="field"><label>DO Number</label><input id="dashFilterDO" placeholder="Search DO" type="text"/></div>
+<div class="field"><label>PO Number</label><input id="dashFilterPO" placeholder="Search PO" type="text"/></div>
+<div class="field" style="justify-content:flex-end"><label> </label><button class="btn btn-secondary" id="resetDashboardFilters">Reset Filters</button></div>
+</div>
+</div>
+<div class="stats-grid" id="statsGrid"></div>
+<div class="dashboard-grid">
+<div class="card chart-card">
+<div class="card-heading"><h3>Daily Receiving Chart</h3><span class="small-muted">Last 7 days</span></div>
+<canvas height="300" id="dailyChart" width="900"></canvas>
+</div>
+<div class="card summary-card">
+<div class="card-heading"><h3>Today Summary</h3></div>
+<div class="summary-list" id="todaySummary"></div>
+</div>
+</div>
+</section>
+<section class="section has-wave-bg" id="bookingSection">
+<div class="section-head">
+<div>
+<h2>Shipment Booking</h2>
+<p>Check availability and submit an inbound booking without leaving this application.</p>
+</div>
+<div class="toolbar">
+<button class="btn module-guide-btn" id="bookingGuideBtn" type="button">✦ Booking Guide</button>
+<button class="btn btn-outline" id="refreshCalendarBtn" type="button">↻ Refresh Availability</button>
+</div>
+</div>
+<div class="booking-rules">
+<div class="booking-rule"><div class="booking-rule-icon">📆</div><div><strong>Book at least 1 day earlier</strong><span>Submit the booking before the planned shipment date.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">🟠</div><div><strong>BOOKED can still be selected</strong><span>Existing bookings are shown, but another booking may still be submitted.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">🔴</div><div><strong>BUSY means full</strong><span>Please choose a different date or time slot.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">🍽️</div><div><strong>No booking from 1:00–2:00 PM</strong><span>This time is reserved for the warehouse break.</span></div></div>
+</div>
+<div class="card booking-embed" id="bookingCalendarCard">
+<div class="booking-embed-head">
+<div>
+<h3>1. Check Availability Calendar</h3>
+<p>The calendar refreshes when this section is opened and every 60 seconds while viewing.</p>
+<div class="booking-status-guide">
+<span class="booking-status available">AVAILABLE</span>
+<span class="booking-status booked">BOOKED</span>
+<span class="booking-status busy">BUSY</span>
+<span class="booking-status break">BREAK</span>
+</div>
+</div>
+</div>
+<iframe class="booking-frame booking-calendar-frame" data-src="https://docs.google.com/spreadsheets/d/1CmN9WCMbOnrO5jV41m-1INPJQ91wwJn7zZxkEYjJzng/preview?rm=minimal&amp;gid=1327906225" id="bookingCalendarFrame" loading="lazy" src="about:blank" title="Shipment availability calendar">
+</iframe>
+</div>
+<div class="card booking-embed" id="bookingFormCard">
+<div class="booking-embed-head">
+<div><h3>2. Submit Booking Form</h3><p>Complete and submit the form below. The booking will continue using the existing Google Form and Sheet.</p></div>
+<button class="btn btn-secondary" id="resetBookingFormBtn" type="button">↺ Reload Form</button>
+</div>
+<div class="booking-submit-help" id="bookingSubmitHelp">
+<strong>Final booking flow</strong>
+<div class="booking-submit-steps">
+<span class="booking-submit-step"><b>1</b> Fill every required field</span>
+<span class="booking-submit-arrow">→</span>
+<span class="booking-submit-step"><b>2</b> Scroll to the bottom of the form</span>
+<span class="booking-submit-arrow">→</span>
+<span class="booking-submit-step"><b>3</b> Press the purple Submit button</span>
+</div>
+</div>
+<iframe class="booking-frame booking-form-frame" data-src="https://docs.google.com/forms/d/e/1FAIpQLSf56-3WmmLCNHgDGRPP1QFGU7aXkb8xipX6yCja2O_I6hZ6pA/viewform?embedded=true" id="bookingFormFrame" loading="lazy" src="about:blank" title="Inbound shipment booking form">
+</iframe>
+</div>
+</section>
+<section class="section has-wave-bg" id="receivingSection">
+<div class="section-head">
+<div><h2>Receiving Sheet</h2><p>Record inbound shipment and track receiving time.</p></div>
+<div class="toolbar">
+<button class="btn module-guide-btn" id="receivingGuideBtn" type="button">✦ Receiving Guide</button>
+<button class="btn btn-outline" id="exportReceivingBtn">⬇ Export CSV</button>
+<button class="btn btn-secondary" id="resetReceivingBtn">↺ Reset Form</button>
+</div>
+</div>
+<div class="card form-card">
+<div class="form-title"><span>📦 Shipment Information</span><span class="status-badge status-pending" id="formStatusBadge">Pending</span></div>
+<div class="alert alert-warning company-required-warning" id="receivingCompanyWarning">⚠ Select a company workspace before creating a receiving record.</div>
+<form id="receivingForm" novalidate="">
+<input id="receivingEditId" type="hidden"/>
+<div class="form-grid">
+<div class="field"><label>Record ID</label><input id="recordId" readonly=""/></div>
+<div class="field"><label class="required">DO Number</label><input autocomplete="off" id="doNumber" placeholder="Example: DO-2026-001"/></div>
+<div class="field"><label class="required">PO Number</label><input autocomplete="off" id="poNumber" placeholder="Example: PO-88921"/></div>
+<div class="field"><label class="required">Company Name</label><input id="customerName" placeholder="Select company workspace" readonly=""/></div>
+<div class="field"><label class="required">Shipment Date</label><input id="shipmentDate" type="date"/></div>
+<div class="field"><label class="required">Vehicle Number</label><input id="vehicleNumber" placeholder="Example: VAB 1234 / Lalamove"/></div>
+<div class="field"><label class="required">Transport Type</label>
+<select id="transportType"><option value="">Select transport</option><option>Lorry</option><option>Van</option><option>Car</option><option>Motorcycle</option><option>Lalamove</option><option>Other</option></select>
+</div>
+<div class="field"><label class="required">Receiving Staff Name</label><input id="staffName" list="staffList" placeholder="Staff name"/></div>
+<div class="field"><label class="required">Expected CTN / Pallet Qty</label><input id="expectedQty" min="0" placeholder="0" step="1" type="number"/></div>
+<div class="field"><label>Actual Received Qty</label><input id="actualQty" min="0" placeholder="0" step="1" type="number"/></div>
+<div class="field"><label>Variance</label><input class="variance-box" id="variance" readonly="" value="0"/></div>
+<div class="field"><label>Current Date / Time</label><input id="currentDateTime" readonly=""/></div>
+<div class="field span-4"><label>Remarks</label><textarea id="receivingRemarks" placeholder="Optional remarks"></textarea></div>
+</div>
+<div class="status-actions">
+<button class="btn btn-primary" id="arrivedBtn" type="button">🚚 Arrived</button>
+<button class="btn btn-warning" id="startBtn" type="button">▶ Start Receiving</button>
+<button class="btn btn-success" id="completeBtn" type="button">✓ Complete</button>
+<div class="live-timer" id="liveTimer">4-hour timer: Not started</div>
+</div>
+<div class="alert alert-danger" id="receivingError"></div>
+<div class="alert alert-warning" id="varianceWarning">⚠ Quantity does not match. Please create a discrepancy report.</div>
+<div class="form-actions">
+<button class="btn btn-primary" type="submit">💾 Save Record</button>
+<button class="btn btn-darkred" id="createDiscrepancyBtn" style="display:none" type="button">⚠ Create Discrepancy Report</button>
+<span class="small-muted" id="timestampInfo"></span>
+</div>
+</form>
+</div>
+<div class="card filter-card">
+<div class="filter-grid">
+<div class="field"><label>Date</label><input id="recFilterDate" type="date"/></div>
+<div class="field"><label>Customer</label><input id="recFilterCustomer" placeholder="Customer"/></div>
+<div class="field"><label>Status</label><select id="recFilterStatus"><option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option></select></div>
+<div class="field"><label>DO Number</label><input id="recFilterDO" placeholder="DO number"/></div>
+<div class="field"><label>PO Number</label><input id="recFilterPO" placeholder="PO number"/></div>
+<div class="field" style="justify-content:flex-end"><label> </label><button class="btn btn-secondary" id="resetReceivingFilters" type="button">Reset Filters</button></div>
+</div>
+</div>
+<div class="card table-card">
+<div class="table-header"><strong>Receiving Records — <span id="receivingWorkspaceLabel">Airali</span></strong><span class="small-muted" id="receivingCount">0 records</span></div>
+<div class="client-only client-detail-hint" id="receivingClientDetailHint">
+<span class="client-detail-hint-icon">👁</span>
+<div><strong>Want the complete shipment details?</strong>Find your DO or PO, scroll the table to <b>Actions</b>, then press the eye button to view quantities, arrival time, receiving time, completion, duration, status and remarks.</div>
+</div>
+<div class="editor-only editor-record-hint" id="receivingEditorHint">
+<span class="editor-record-hint-icon">✏</span>
+<div><strong>Saved records appear here</strong>To correct a wrong DO, PO, quantity or other detail, find the record, scroll to <b>Actions</b> and press <b>Edit</b>. The record opens in the form above—make the correction and press <b>Save Record</b> again.</div>
+</div>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Record ID</th><th>Date</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>Vehicle</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Arrival</th><th>Start</th><th>Completion</th><th>Total Duration</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody id="receivingTableBody"></tbody>
+</table>
+</div>
+</div>
+</section>
+<section class="section has-wave-bg" id="discrepancySection">
+<div class="section-head">
+<div><h2>Discrepancy Report</h2><p>Record damaged, missing, excess or wrong items.</p></div>
+<div class="toolbar"><button class="btn module-guide-btn" id="discrepancyGuideBtn" type="button">✦ Discrepancy Guide</button><button class="btn btn-outline" id="exportDiscrepancyBtn">⬇ Export CSV</button><button class="btn btn-secondary" id="resetDiscrepancyBtn">↺ Reset Form</button></div>
+</div>
+<div class="card form-card">
+<div class="form-title"><span>⚠ Discrepancy Details</span><span class="status-badge status-discrepancy" id="discFormBadge">Unresolved</span></div>
+<div class="alert alert-warning company-required-warning" id="discrepancyCompanyWarning">⚠ Select a company workspace before creating a discrepancy report.</div>
+<form id="discrepancyForm" novalidate="">
+<input id="discrepancyEditId" type="hidden"/>
+<input id="linkedReceivingId" type="hidden"/>
+<div class="form-grid">
+<div class="field"><label class="required">Report Date</label><input id="reportDate" type="date"/></div>
+<div class="field"><label class="required">DO Number</label><input id="discDONumber"/></div>
+<div class="field"><label class="required">PO Number</label><input id="discPONumber"/></div>
+<div class="field"><label class="required">Company Name</label><input id="discCustomer" readonly=""/></div>
+<div class="field"><label class="required">SKU</label><input id="sku" placeholder="SKU code"/></div>
+<div class="field"><label class="required">Product Name</label><input id="productName" placeholder="Product name"/></div>
+<div class="field"><label class="required">Expected Quantity</label><input id="discExpectedQty" min="0" step="1" type="number"/></div>
+<div class="field"><label class="required">Actual Quantity</label><input id="discActualQty" min="0" step="1" type="number"/></div>
+<div class="field"><label>Variance</label><input class="variance-box" id="discVariance" readonly="" value="0"/></div>
+<div class="field"><label class="required">Issue Type</label><select id="issueType"><option value="">Select issue</option><option>Damaged Item</option><option>Short Quantity</option><option>Excess Quantity</option><option>Wrong Item</option><option>Missing Item</option><option>Packaging Damage</option><option>Other</option></select></div>
+<div class="field"><label class="required">Item Condition</label><select id="itemCondition"><option value="">Select condition</option><option>Good</option><option>Damaged</option><option>Rejected</option></select></div>
+<div class="field"><label class="required">Action Taken</label><select id="actionTaken"><option value="">Select action</option><option>Return to Sender</option><option>Dispose</option><option>Quarantine</option><option>Replace</option><option>Accept with Approval</option><option>Pending Investigation</option></select></div>
+<div class="field"><label class="required">Person in Charge</label><input id="personInCharge" placeholder="PIC name"/></div>
+<div class="field span-2"><label>Photo Upload</label><input accept="image/*" id="photoUpload" type="file"/><div class="photo-note">For this prototype, use a small image below 1.5 MB.</div></div>
+<div class="field span-4"><label>Remarks</label><textarea id="discRemarks" placeholder="Add details about the issue"></textarea></div>
+</div>
+<div class="alert alert-danger" id="discrepancyError"></div>
+<div class="form-actions"><button class="btn btn-darkred" type="submit">💾 Save Discrepancy</button><span class="small-muted" id="photoStatus"></span></div>
+</form>
+</div>
+<div class="card table-card">
+<div class="table-header"><strong>Discrepancy Cases — <span id="discrepancyWorkspaceLabel">Airali</span></strong><span class="small-muted" id="discrepancyCount">0 cases</span></div>
+<div class="client-only client-detail-hint" id="discrepancyClientDetailHint">
+<span class="client-detail-hint-icon">👁</span>
+<div><strong>Want the complete discrepancy report?</strong>Find the matching DO, PO or SKU, scroll to <b>Actions</b>, then press the eye button to view the issue, quantities, action taken, status, remarks and photo evidence.</div>
+</div>
+<div class="editor-only editor-record-hint" id="discrepancyEditorHint">
+<span class="editor-record-hint-icon">✏</span>
+<div><strong>Saved discrepancy cases appear here</strong>To correct details or replace a wrong photo, find the case, scroll to <b>Actions</b> and press <b>Edit</b>. Correct the form above, choose a new photo when needed, then press <b>Save Discrepancy</b> again.</div>
+</div>
+<div class="table-wrap">
+<table style="min-width:1350px">
+<thead><tr><th>Date</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>SKU</th><th>Product</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Issue</th><th>Condition</th><th>Action</th><th>PIC</th><th>Status</th><th>Actions</th></tr></thead>
+<tbody id="discrepancyTableBody"></tbody>
+</table>
+</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+<div aria-hidden="true" class="tutorial-layer" id="tutorialLayer">
+<div class="tutorial-spotlight" id="tutorialSpotlight"></div>
+<div aria-hidden="true" class="tutorial-guide-wrap">
+<img alt="" class="tutorial-guide" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="/>
+</div>
+<section aria-labelledby="tutorialLanguageTitle" aria-modal="true" class="tutorial-language-panel" id="tutorialLanguagePanel" role="dialog">
+<div class="language-panel-top">
+<div class="language-eyebrow">Qaiyum Interactive Guide</div>
+<h2 id="tutorialLanguageTitle">Choose tutorial language</h2>
+<p>Select one language before the step-by-step guide begins.</p>
+<span class="language-guide-name" id="languageGuideName">General App Guide</span>
+</div>
+<div class="language-options">
+<button class="language-option" data-tutorial-language="en" type="button"><span class="language-code">EN</span><strong>English</strong><small>Continue the guide in English</small></button>
+<button class="language-option" data-tutorial-language="my" type="button"><span class="language-code">MM</span><strong>မြန်မာ</strong><small>မြန်မာဘာသာဖြင့် လမ်းညွှန်</small></button>
+<button class="language-option" data-tutorial-language="zh" type="button"><span class="language-code">中文</span><strong>Chinese</strong><small>使用中文查看操作指南</small></button>
+</div>
+<button class="language-later" id="tutorialLanguageLater" type="button">Maybe later</button>
+</section>
+<section aria-describedby="tutorialCopy" aria-labelledby="tutorialTitle" aria-modal="true" class="tutorial-dialog" role="dialog">
+<div class="tutorial-dialog-top"></div>
+<div class="tutorial-dialog-body">
+<div class="tutorial-meta"><span class="tutorial-name" id="tutorialGuideName">Qaiyum Guide · Online</span><span class="tutorial-step-count" id="tutorialStepCount">1 / 10</span></div>
+<h2 class="tutorial-title" id="tutorialTitle">Welcome</h2>
+<p class="tutorial-copy" id="tutorialCopy"></p>
+<div aria-hidden="true" class="tutorial-progress" id="tutorialProgress"></div>
+</div>
+<div class="tutorial-actions">
+<button class="tutorial-action tutorial-back" id="tutorialBackBtn" type="button">Back</button>
+<button class="tutorial-action tutorial-skip" id="tutorialSkipBtn" type="button">Skip</button>
+<button class="tutorial-action tutorial-never" id="tutorialNeverBtn" type="button">Don't show automatically</button>
+<button class="tutorial-action tutorial-next" id="tutorialNextBtn" type="button">Next →</button>
+</div>
+</section>
+</div>
+<datalist id="customerList"></datalist>
+<datalist id="staffList"></datalist>
+<div class="modal" id="detailModal">
+<div class="modal-box">
+<div class="modal-head"><h3 id="modalTitle">Details</h3><button class="close-btn" id="closeModal">×</button></div>
+<div class="modal-body" id="modalBody"></div>
+</div>
+</div>
+<div class="modal" id="accountsModal">
+<div class="modal-box" style="width:min(1020px,100%)">
+<div class="modal-head"><h3>Login Accounts</h3><div class="toolbar"><button class="btn btn-primary btn-sm" id="addAccountBtn" type="button">＋ Add Login</button><button class="close-btn" id="closeAccountsModal">×</button></div></div>
+<div class="modal-body">
+<div class="security-note"><strong>Firebase Online:</strong> accounts and warehouse records sync securely across authorised devices. Clients only open their assigned company workspace.</div>
+<div class="account-create-card" id="accountCreateCard">
+<form id="newAccountForm" novalidate="">
+<div class="account-create-grid">
+<div class="field"><label class="required">Email</label><input id="newAccountUsername" placeholder="Example: client@company.com" type="email"/></div>
+<div class="field"><label class="required">Password</label><input id="newAccountPassword" minlength="6" placeholder="Minimum 6 characters" type="text"/></div>
+<div class="field"><label class="required">Role</label><select id="newAccountRole"><option value="client">Client</option><option value="staff">Staff</option><option value="admin">Admin</option></select></div>
+<div class="field"><label class="required">Company</label><select id="newAccountCompany"></select></div>
+</div>
+<div class="alert alert-danger" id="newAccountError"></div>
+<div class="account-create-actions"><button class="btn btn-primary" type="submit">💾 Create Login</button><button class="btn btn-secondary" id="cancelNewAccountBtn" type="button">Cancel</button></div>
+</form>
+</div>
+<input class="account-search" id="accountSearch" placeholder="Search email, role or company"/>
+<div class="table-wrap"><table class="account-table"><thead><tr><th>Email</th><th>Security</th><th>Role</th><th>Company</th><th>Status</th><th>Actions</th></tr></thead><tbody id="accountTableBody"></tbody></table></div>
+</div>
+</div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+<div aria-modal="true" class="install-modal" id="installModal" role="dialog"><div class="install-card"><h3>Install Warehouse Receiving Sheet</h3><p id="installCopy">Install for one-tap access.</p><ol id="installSteps"></ol><button class="install-close" id="installClose" type="button">Done</button></div></div>
+
+<script src="./app-final-20260807-v3.js?v=20260807-v3"></script><script src="./install-final-20260807-v3.js?v=20260807-v3"></script></body>
+</html>

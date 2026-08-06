@@ -1,0 +1,20 @@
+{
+  "id": "./FINAL_APP.html?id=20260807-v3",
+  "name": "Warehouse Receiving Sheet FINAL",
+  "short_name": "WRS FINAL",
+  "description": "GOS Fulfilment warehouse receiving and client portal.",
+  "start_url": "./FINAL_APP.html?source=pwa&v=20260807-v3",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a1328",
+  "theme_color": "#17264a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./icon-final-20260807-v3.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
