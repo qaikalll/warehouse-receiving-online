@@ -1,0 +1,15 @@
+UPLOAD TO GITHUB PAGES
+
+1. Open repository: qaikalll/warehouse-receiving-online
+2. Add file > Upload files
+3. Upload ALL files inside this folder directly to the repository root.
+4. Select "Commit directly to the main branch".
+5. Click Commit changes.
+6. Wait 2-5 minutes.
+7. Open:
+   https://qaikalll.github.io/warehouse-receiving-online/?v=20260807-final-v2
+
+If an installed old app is still open:
+- Close it completely.
+- Open the link above in Chrome/Edge/Safari.
+- Refresh once.
