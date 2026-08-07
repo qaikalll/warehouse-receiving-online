@@ -1,11 +1,12 @@
-const CACHE='wrs-20260807-smart-booking-lang-v6-1';
+const CACHE='wrs-20260807-full-app-i18n-v6-4';
 const CORE=[
   './',
-  './app.css?v=20260807-smart-booking-lang-v6-1',
-  './app.js?v=20260807-smart-booking-lang-v6-1',
-  './branding.js?v=20260807-smart-booking-lang-v6-1',
-  './install.js?v=20260807-smart-booking-lang-v6-1',
-  './manifest.webmanifest?v=20260807-smart-booking-lang-v6-1',
+  './app.css?v=20260807-full-app-i18n-v6-4',
+  './app.js?v=20260807-full-app-i18n-v6-4',
+  './branding.js?v=20260807-full-app-i18n-v6-4',
+  './install.js?v=20260807-full-app-i18n-v6-4',
+  './app-i18n.js?v=20260807-full-app-i18n-v6-4',
+  './manifest.webmanifest?v=20260807-full-app-i18n-v6-4',
   './icon.svg'
 ];
 self.addEventListener('install',event=>{

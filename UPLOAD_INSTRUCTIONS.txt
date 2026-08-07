@@ -1,15 +1,17 @@
-UPLOAD TO GITHUB PAGES
+FULL APP LANGUAGE FIX V6.4
 
-1. Open repository: qaikalll/warehouse-receiving-online
-2. Add file > Upload files
-3. Upload ALL files inside this folder directly to the repository root.
-4. Select "Commit directly to the main branch".
-5. Click Commit changes.
-6. Wait 2-5 minutes.
-7. Open:
-   https://qaikalll.github.io/warehouse-receiving-online/?v=20260807-final-v2
+Upload these 3 files to the ROOT of the GitHub repository:
+1. index.html
+2. app-i18n.js
+3. sw.js
 
-If an installed old app is still open:
-- Close it completely.
-- Open the link above in Chrome/Edge/Safari.
-- Refresh once.
+Replace index.html and sw.js when GitHub asks. app-i18n.js is a new file.
+Commit directly to main and wait for GitHub Pages Actions to turn green.
+
+What this fixes:
+- BM / EN / Chinese selected before login now applies throughout the app UI after login.
+- Dashboard, Booking, Receiving, Discrepancy, Manage Logins, buttons, statuses, placeholders, messages and install modal follow the selected app language.
+- The selected language persists on that device.
+- Tutorial language remains independent. Myanmar remains available only inside Staff tutorial, not as the general app language.
+
+No Firebase Rules changes are required.
