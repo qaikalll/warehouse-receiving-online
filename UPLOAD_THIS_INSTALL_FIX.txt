@@ -1,0 +1,3 @@
+Upload install.js to the ROOT of the GitHub repository and replace the existing install.js.
+Commit directly to main, then wait for GitHub Pages Actions to turn green.
+No Firebase changes are required for this fix.
