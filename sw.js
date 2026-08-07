@@ -1,11 +1,11 @@
-const CACHE='wrs-20260807-mobile-guide-v5';
+const CACHE='wrs-20260807-smart-booking-lang-v6-1';
 const CORE=[
   './',
-  './app.css?v=20260807-mobile-guide-v5',
-  './app.js?v=20260807-mobile-guide-v5',
-  './branding.js?v=20260807-mobile-guide-v5',
-  './install.js?v=20260807-mobile-guide-v5',
-  './manifest.webmanifest?v=20260807-mobile-guide-v5',
+  './app.css?v=20260807-smart-booking-lang-v6-1',
+  './app.js?v=20260807-smart-booking-lang-v6-1',
+  './branding.js?v=20260807-smart-booking-lang-v6-1',
+  './install.js?v=20260807-smart-booking-lang-v6-1',
+  './manifest.webmanifest?v=20260807-smart-booking-lang-v6-1',
   './icon.svg'
 ];
 self.addEventListener('install',event=>{

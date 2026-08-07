@@ -6,28 +6,33 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Warehouse Receiving Sheet — Ready Client Portal</title>
-<!-- GitHub Pages release: 20260807-mobile-guide-v5 -->
+<!-- GitHub Pages release: 20260807-smart-booking-lang-v6-1 -->
 
-<link href="./manifest.webmanifest?v=20260807-mobile-guide-v5" rel="manifest"/>
+<link href="./manifest.webmanifest?v=20260807-smart-booking-lang-v6-1" rel="manifest"/>
 <meta content="#17264a" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
 <meta content="WRS" name="apple-mobile-web-app-title"/>
 <link href="./icon.svg" rel="apple-touch-icon"/>
-<link href="./app.css?v=20260807-mobile-guide-v5" rel="stylesheet"/><script defer="True" src="./branding.js?v=20260807-mobile-guide-v5"></script></head>
+<link href="./app.css?v=20260807-smart-booking-lang-v6-1" rel="stylesheet"/><script defer="True" src="./branding.js?v=20260807-smart-booking-lang-v6-1"></script></head>
 <body class="logged-out">
 <div class="login-screen" id="loginScreen">
 <div class="login-card">
 <div class="login-logo"><img alt="GOS Fulfilment" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="/></div>
-<h2>Warehouse Receiving Sheet</h2>
-<p>Sign in to open your secure online company workspace.</p>
+<div class="login-language-switch" aria-label="Choose login language">
+<button class="login-language-btn" data-login-language="ms" type="button">BM</button>
+<button class="login-language-btn active" data-login-language="en" type="button">EN</button>
+<button class="login-language-btn" data-login-language="zh" type="button">中文</button>
+</div>
+<h2 id="loginTitle">Warehouse Receiving Sheet</h2>
+<p id="loginSubtitle">Sign in to open your secure online company workspace.</p>
 <div class="login-error" id="loginError"></div>
 <form id="loginForm">
-<div class="field"><label>Login ID or Email</label><input autocapitalize="none" autocomplete="username" id="loginId" placeholder="Example: admin, airali or email" spellcheck="false" type="text"/></div>
-<div class="field"><label>Password</label><input autocomplete="current-password" id="loginPassword" placeholder="Enter password" type="password"/></div>
-<button class="btn btn-primary" type="submit">🔐 Sign In</button>
+<div class="field"><label id="loginIdLabel">Login ID or Email</label><input autocapitalize="none" autocomplete="username" id="loginId" placeholder="Example: admin, airali or email" spellcheck="false" type="text"/></div>
+<div class="field"><label id="loginPasswordLabel">Password</label><input autocomplete="current-password" id="loginPassword" placeholder="Enter password" type="password"/></div>
+<button class="btn btn-primary" id="loginSubmitBtn" type="submit">🔐 Sign In</button>
 </form>
-<div class="login-help"><strong>First admin login:</strong> admin / Admin@2026<br/><span style="opacity:.82">Client may use company Login ID (example: airali) or the Firebase email given by admin.</span></div>
+<div class="login-help" id="loginHelp"><strong>First admin login:</strong> admin / Admin@2026<br/><span style="opacity:.82">Client may use company Login ID (example: airali) or the Firebase email given by admin.</span></div>
 </div>
 </div>
 <div class="app-shell">
@@ -126,7 +131,7 @@
 </div>
 </div>
 <button class="nav-btn active" data-section="dashboard"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-13h6V4h-6v3Z"></path></svg></span>Dashboard</button>
-<button class="nav-btn" data-section="booking"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Zm3 8h3v3H8v-3Z"></path></svg></span>Shipment Booking</button>
+<button class="nav-btn" data-section="booking"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6.1a1 1 0 0 1 1-1Zm3 8h3v3H8v-3Z"></path></svg></span>Shipment Booking</button>
 <button class="nav-btn" data-section="receiving"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m4 8 8-4 8 4v9l-8 4-8-4V8Zm0 0 8 4 8-4m-8 4v9M8 6l8 4"></path></svg></span>Receiving Sheet</button>
 <button class="nav-btn" data-section="discrepancy"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"></path></svg></span>Discrepancy Report</button>
 <button class="nav-btn admin-only" id="manageAccountsBtn" type="button"><span class="nav-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-6 9c0-4 2.7-6 6-6 1.3 0 2.5.3 3.4.9M17 12v-2a2 2 0 1 0-4 0v2m-1 0h6v7h-6v-7Z"></path></svg></span>Manage Logins</button>
@@ -157,7 +162,7 @@
 <div class="field"><label>Date</label><input id="dashFilterDate" type="date"/></div>
 <div class="field"><label>Status</label>
 <select id="dashFilterStatus">
-<option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option>
+<option value="">All Status</option><option>Scheduled Inbound</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option>
 </select>
 </div>
 <div class="field"><label>DO Number</label><input id="dashFilterDO" placeholder="Search DO" type="text"/></div>
@@ -181,7 +186,7 @@
 <div class="section-head">
 <div>
 <h2>Shipment Booking</h2>
-<p>Check availability and submit an inbound booking without leaving this application.</p>
+<p>Reserve an inbound delivery slot. Each 30-minute slot can only be booked by one customer for that date.</p>
 </div>
 <div class="toolbar">
 <button class="btn module-guide-btn" id="bookingGuideBtn" type="button">✦ Booking Guide</button>
@@ -189,44 +194,52 @@
 </div>
 </div>
 <div class="booking-rules">
-<div class="booking-rule"><div class="booking-rule-icon">📆</div><div><strong>Book at least 1 day earlier</strong><span>Submit the booking before the planned shipment date.</span></div></div>
-<div class="booking-rule"><div class="booking-rule-icon">🟠</div><div><strong>BOOKED can still be selected</strong><span>Existing bookings are shown, but another booking may still be submitted.</span></div></div>
-<div class="booking-rule"><div class="booking-rule-icon">🔴</div><div><strong>BUSY means full</strong><span>Please choose a different date or time slot.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">📆</div><div><strong>Book at least 1 day earlier</strong><span>The earliest booking date is tomorrow.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">🕒</div><div><strong>One customer per 30-minute slot</strong><span>Once a slot is booked, nobody else can select that same time on the same date.</span></div></div>
+<div class="booking-rule"><div class="booking-rule-icon">🔴</div><div><strong>FULL means unavailable</strong><span>Choose another time or another date.</span></div></div>
 <div class="booking-rule"><div class="booking-rule-icon">🍽️</div><div><strong>No booking from 1:00–2:00 PM</strong><span>This time is reserved for the warehouse break.</span></div></div>
 </div>
-<div class="card booking-embed" id="bookingCalendarCard">
+<div class="card booking-native-card" id="bookingCalendarCard">
 <div class="booking-embed-head">
 <div>
-<h3>1. Check Availability Calendar</h3>
-<p>The calendar refreshes when this section is opened and every 60 seconds while viewing.</p>
+<h3>1. Choose Delivery Date &amp; Time</h3>
+<p>Booked slots are disabled automatically for the selected date.</p>
 <div class="booking-status-guide">
 <span class="booking-status available">AVAILABLE</span>
-<span class="booking-status booked">BOOKED</span>
-<span class="booking-status busy">BUSY</span>
+<span class="booking-status busy">FULL</span>
 <span class="booking-status break">BREAK</span>
 </div>
 </div>
 </div>
-<iframe class="booking-frame booking-calendar-frame" data-src="https://docs.google.com/spreadsheets/d/1CmN9WCMbOnrO5jV41m-1INPJQ91wwJn7zZxkEYjJzng/preview?rm=minimal&amp;gid=1327906225" id="bookingCalendarFrame" loading="lazy" src="about:blank" title="Shipment availability calendar">
-</iframe>
+<div class="booking-date-row">
+<div class="field"><label class="required" for="bookingDate">Delivery Date</label><input id="bookingDate" type="date"/></div>
+<div class="booking-selected-slot" id="bookingSelectedSlot">No time selected</div>
 </div>
-<div class="card booking-embed" id="bookingFormCard">
+<div class="booking-slot-grid" id="bookingSlotGrid" aria-live="polite"></div>
+<div class="small-muted booking-availability-note" id="bookingAvailabilityNote">Choose a date to load available time slots.</div>
+</div>
+<div class="card booking-native-card" id="bookingFormCard">
 <div class="booking-embed-head">
-<div><h3>2. Submit Booking Form</h3><p>Complete and submit the form below. The booking will continue using the existing Google Form and Sheet.</p></div>
-<button class="btn btn-secondary" id="resetBookingFormBtn" type="button">↺ Reload Form</button>
+<div><h3>2. Submit Shipment Details</h3><p>Your booking will automatically appear in the Receiving Sheet as <b>Scheduled Inbound</b>.</p></div>
+<button class="btn btn-secondary" id="resetBookingFormBtn" type="button">↺ Reset Form</button>
 </div>
-<div class="booking-submit-help" id="bookingSubmitHelp">
-<strong>Final booking flow</strong>
-<div class="booking-submit-steps">
-<span class="booking-submit-step"><b>1</b> Fill every required field</span>
-<span class="booking-submit-arrow">→</span>
-<span class="booking-submit-step"><b>2</b> Scroll to the bottom of the form</span>
-<span class="booking-submit-arrow">→</span>
-<span class="booking-submit-step"><b>3</b> Press the purple Submit button</span>
+<div class="alert alert-warning company-required-warning" id="bookingCompanyWarning">⚠ Select a company workspace before creating a booking.</div>
+<form id="bookingForm" novalidate="">
+<input id="bookingSlotStart" type="hidden"/>
+<input id="bookingSlotEnd" type="hidden"/>
+<div class="form-grid booking-form-grid">
+<div class="field"><label class="required">Company Name</label><input id="bookingCompanyName" readonly=""/></div>
+<div class="field"><label class="required">DO Number</label><input autocomplete="off" id="bookingDONumber" placeholder="Example: DO-2026-001"/></div>
+<div class="field"><label class="required">PO Number</label><input autocomplete="off" id="bookingPONumber" placeholder="Example: PO-88921"/></div>
+<div class="field"><label class="required">Vehicle Number</label><input id="bookingVehicleNumber" placeholder="Example: VAB 1234 / Lalamove"/></div>
+<div class="field"><label class="required">Transport Type</label><select id="bookingTransportType"><option value="">Select transport</option><option>Lorry</option><option>Van</option><option>Car</option><option>Motorcycle</option><option>Lalamove</option><option>Other</option></select></div>
+<div class="field"><label class="required">Expected CTN / Pallet Qty</label><input id="bookingExpectedQty" min="0" placeholder="0" step="1" type="number"/></div>
+<div class="field span-4"><label>Remarks</label><textarea id="bookingRemarks" placeholder="Optional shipment notes"></textarea></div>
 </div>
-</div>
-<iframe class="booking-frame booking-form-frame" data-src="https://docs.google.com/forms/d/e/1FAIpQLSf56-3WmmLCNHgDGRPP1QFGU7aXkb8xipX6yCja2O_I6hZ6pA/viewform?embedded=true" id="bookingFormFrame" loading="lazy" src="about:blank" title="Inbound shipment booking form">
-</iframe>
+<div class="booking-submit-summary" id="bookingSubmitSummary">Select a date and available time slot above.</div>
+<div class="alert alert-danger" id="bookingError"></div>
+<div class="form-actions"><button class="btn btn-primary" id="submitBookingBtn" type="submit">📅 Confirm Booking</button></div>
+</form>
 </div>
 </section>
 <section class="section has-wave-bg" id="receivingSection">
@@ -249,6 +262,7 @@
 <div class="field"><label class="required">PO Number</label><input autocomplete="off" id="poNumber" placeholder="Example: PO-88921"/></div>
 <div class="field"><label class="required">Company Name</label><input id="customerName" placeholder="Select company workspace" readonly=""/></div>
 <div class="field"><label class="required">Shipment Date</label><input id="shipmentDate" type="date"/></div>
+<div class="field"><label>Booked Time Slot</label><input id="receivingBookingSlot" placeholder="Created from shipment booking" readonly=""/></div>
 <div class="field"><label class="required">Vehicle Number</label><input id="vehicleNumber" placeholder="Example: VAB 1234 / Lalamove"/></div>
 <div class="field"><label class="required">Transport Type</label>
 <select id="transportType"><option value="">Select transport</option><option>Lorry</option><option>Van</option><option>Car</option><option>Motorcycle</option><option>Lalamove</option><option>Other</option></select>
@@ -279,7 +293,7 @@
 <div class="filter-grid">
 <div class="field"><label>Date</label><input id="recFilterDate" type="date"/></div>
 <div class="field"><label>Customer</label><input id="recFilterCustomer" placeholder="Customer"/></div>
-<div class="field"><label>Status</label><select id="recFilterStatus"><option value="">All Status</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option></select></div>
+<div class="field"><label>Status</label><select id="recFilterStatus"><option value="">All Status</option><option>Scheduled Inbound</option><option>Pending</option><option>Arrived</option><option>Receiving</option><option>Completed</option><option>Exceeded 4 Hours</option><option>Discrepancy</option></select></div>
 <div class="field"><label>DO Number</label><input id="recFilterDO" placeholder="DO number"/></div>
 <div class="field"><label>PO Number</label><input id="recFilterPO" placeholder="PO number"/></div>
 <div class="field" style="justify-content:flex-end"><label> </label><button class="btn btn-secondary" id="resetReceivingFilters" type="button">Reset Filters</button></div>
@@ -297,7 +311,7 @@
 </div>
 <div class="table-wrap">
 <table>
-<thead><tr><th>Record ID</th><th>Date</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>Vehicle</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Arrival</th><th>Start</th><th>Completion</th><th>Total Duration</th><th>Status</th><th>Actions</th></tr></thead>
+<thead><tr><th>Record ID</th><th>Date</th><th>Booking Slot</th><th>DO Number</th><th>PO Number</th><th>Customer</th><th>Vehicle</th><th>Expected</th><th>Actual</th><th>Variance</th><th>Arrival</th><th>Start</th><th>Completion</th><th>Total Duration</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody id="receivingTableBody"></tbody>
 </table>
 </div>
@@ -369,8 +383,9 @@
 <span class="language-guide-name" id="languageGuideName">General App Guide</span>
 </div>
 <div class="language-options">
+<button class="language-option" data-tutorial-language="ms" type="button"><span class="language-code">BM</span><strong>Bahasa Melayu</strong><small>Teruskan panduan dalam Bahasa Melayu</small></button>
 <button class="language-option" data-tutorial-language="en" type="button"><span class="language-code">EN</span><strong>English</strong><small>Continue the guide in English</small></button>
-<button class="language-option" data-tutorial-language="my" type="button"><span class="language-code">MM</span><strong>မြန်မာ</strong><small>မြန်မာဘာသာဖြင့် လမ်းညွှန်</small></button>
+<button class="language-option tutorial-language-myanmar" data-tutorial-language="my" type="button"><span class="language-code">MM</span><strong>မြန်မာ</strong><small>မြန်မာဘာသာဖြင့် လမ်းညွှန်</small></button>
 <button class="language-option" data-tutorial-language="zh" type="button"><span class="language-code">中文</span><strong>Chinese</strong><small>使用中文查看操作指南</small></button>
 </div>
 <button class="language-later" id="tutorialLanguageLater" type="button">Maybe later</button>
@@ -428,5 +443,5 @@
 
 <div aria-modal="true" class="install-modal" id="installModal" role="dialog"><div class="install-card"><h3>Install Warehouse Receiving Sheet</h3><p id="installCopy">Install for one-tap access.</p><ol id="installSteps"></ol><button class="install-close" id="installClose" type="button">Done</button></div></div>
 
-<script src="./app.js?v=20260807-mobile-guide-v5"></script><script src="./install.js?v=20260807-mobile-guide-v5"></script></body>
+<script src="./app.js?v=20260807-smart-booking-lang-v6-1"></script><script src="./install.js?v=20260807-smart-booking-lang-v6-1"></script></body>
 </html>

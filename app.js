@@ -46,6 +46,10 @@
   let tutorialScrollToken = 0;
   let tutorialMode = 'general';
   let tutorialLanguage = 'en';
+  let bookingSlotUnsubscribe = null;
+  let bookingSlotsForDate = new Set();
+  const LOGIN_LANGUAGE_KEY = 'wrs_login_language_v1';
+  let loginLanguage = localStorage.getItem(LOGIN_LANGUAGE_KEY) || 'en';
   let currentTheme = localStorage.getItem(THEME_KEY)==='dark' ? 'dark' : 'light';
 
   const $ = id => document.getElementById(id);
@@ -109,8 +113,8 @@
     renderCompanyOptions(activeCompany);
   }
   function stopSubscriptions(){
-    [unsubscribeReceiving,unsubscribeDiscrepancy,unsubscribeAccounts,unsubscribeCompanies].forEach(fn=>{try{fn?.()}catch(e){}});
-    unsubscribeReceiving=unsubscribeDiscrepancy=unsubscribeAccounts=unsubscribeCompanies=null;
+    [unsubscribeReceiving,unsubscribeDiscrepancy,unsubscribeAccounts,unsubscribeCompanies,bookingSlotUnsubscribe].forEach(fn=>{try{fn?.()}catch(e){}});
+    unsubscribeReceiving=unsubscribeDiscrepancy=unsubscribeAccounts=unsubscribeCompanies=bookingSlotUnsubscribe=null;
   }
   function renderAll(){mergeCompanyNames();updateWorkspaceUI();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();}
   function subscribeOnlineData(){
@@ -241,7 +245,7 @@
     $('signedInUser').textContent=`${currentUser.displayName} · ${currentUser.role.toUpperCase()}`;
     if(currentUser.role==='client')activeCompany=currentUser.company;else if(activeCompany!==ALL_COMPANIES&&!COMPANIES.includes(activeCompany))activeCompany=ALL_COMPANIES;
     localStorage.setItem(ACTIVE_COMPANY_KEY,activeCompany);
-    applyTheme(currentTheme,false);mergeCompanyNames(currentUser.role==='client'?[currentUser.company]:[]);resetReceivingForm();resetDiscrepancyForm();subscribeOnlineData();
+    applyTheme(currentTheme,false);mergeCompanyNames(currentUser.role==='client'?[currentUser.company]:[]);resetReceivingForm();resetDiscrepancyForm();subscribeOnlineData();resetBookingForm();
     if(showMessage)toast(`Signed in as ${currentUser.displayName}.`,'success');
     if(showMessage&&!tutorialIsCompleted())setTimeout(()=>startTutorial(),650);
   }
@@ -365,11 +369,12 @@
     if (record.completionTime) return durationMs(record) > FOUR_HOURS_MS ? 'Exceeded 4 Hours' : 'Completed';
     if (record.startTime) return 'Receiving';
     if (record.arrivalTime) return 'Arrived';
+    if (record.source==='client-booking' || record.bookingSlot) return 'Scheduled Inbound';
     return 'Pending';
   }
-  function hasDiscrepancy(record){ return variance(record.expectedQty, record.actualQty) !== 0; }
+  function hasDiscrepancy(record){ return !!record.completionTime && record.actualQty!=='' && record.actualQty!=null && variance(record.expectedQty, record.actualQty) !== 0; }
   function statusClass(status){
-    return ({'Pending':'status-pending','Arrived':'status-arrived','Receiving':'status-receiving','Completed':'status-completed','Exceeded 4 Hours':'status-exceeded','Discrepancy':'status-discrepancy','Resolved':'status-completed','Unresolved':'status-discrepancy'})[status] || 'status-pending';
+    return ({'Scheduled Inbound':'status-scheduled','Pending':'status-pending','Arrived':'status-arrived','Receiving':'status-receiving','Completed':'status-completed','Exceeded 4 Hours':'status-exceeded','Discrepancy':'status-discrepancy','Resolved':'status-completed','Unresolved':'status-discrepancy'})[status] || 'status-pending';
   }
   function statusBadge(status){ return `<span class="status-badge ${statusClass(status)}">${esc(status)}</span>`; }
   function metricIcon(name){
@@ -409,14 +414,97 @@
   function hideError(id){ $(id).classList.remove('show'); }
   function updateCurrentDateTime(){ $('currentDateTime').value = new Date().toLocaleString('en-GB'); }
 
-  function reloadBookingFrame(id){
-    const frame=$(id), base=frame.dataset.src;
-    frame.src=`${base}${base.includes('?')?'&':'?'}refresh=${Date.now()}`;
+  const BOOKING_TIME_SLOTS = (()=>{
+    const slots=[];
+    for(let mins=8*60;mins<18*60+30;mins+=30){
+      const startH=Math.floor(mins/60),startM=mins%60,end=mins+30,endH=Math.floor(end/60),endM=end%60;
+      const start=`${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}`;
+      const finish=`${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+      slots.push({start,end:finish,label:`${start} – ${finish}`,breakTime:mins>=13*60&&mins<14*60});
+    }
+    return slots;
+  })();
+  function tomorrowISO(){const d=new Date();d.setDate(d.getDate()+1);return localDateISO(d);}
+  function bookingCompany(){return currentUser?.role==='client'?currentUser.company:(isAllCompanies()?'':activeCompany);}
+  function bookingSlotDocId(date,start){return `${date}_${String(start).replace(':','')}`;}
+  function selectedBookingSlot(){
+    const start=$('bookingSlotStart')?.value||'';
+    return BOOKING_TIME_SLOTS.find(slot=>slot.start===start)||null;
   }
-  function loadBookingFrames(refreshCalendar=false){
-    const calendar=$('bookingCalendarFrame'), form=$('bookingFormFrame');
-    if(refreshCalendar || calendar.src==='about:blank') reloadBookingFrame('bookingCalendarFrame');
-    if(form.src==='about:blank') reloadBookingFrame('bookingFormFrame');
+  function updateBookingSummary(){
+    const date=$('bookingDate')?.value||'',slot=selectedBookingSlot();
+    const company=bookingCompany();
+    if($('bookingCompanyName'))$('bookingCompanyName').value=company;
+    if($('bookingSelectedSlot'))$('bookingSelectedSlot').textContent=slot?`Selected: ${slot.label}`:'No time selected';
+    if($('bookingSubmitSummary'))$('bookingSubmitSummary').textContent=date&&slot?`${company||'Select company'} · ${date} · ${slot.label}`:'Select a date and available time slot above.';
+  }
+  function renderBookingSlots(){
+    const grid=$('bookingSlotGrid');if(!grid)return;
+    const selected=$('bookingSlotStart')?.value||'';
+    grid.innerHTML=BOOKING_TIME_SLOTS.map(slot=>{
+      const full=bookingSlotsForDate.has(slot.start),disabled=slot.breakTime||full;
+      const cls=slot.breakTime?'break':full?'full':selected===slot.start?'selected':'available';
+      const state=slot.breakTime?'BREAK':full?'FULL':'AVAILABLE';
+      return `<button class="booking-slot ${cls}" type="button" data-booking-slot="${slot.start}" ${disabled?'disabled':''}><strong>${esc(slot.label)}</strong><span>${state}</span></button>`;
+    }).join('');
+    const available=BOOKING_TIME_SLOTS.filter(slot=>!slot.breakTime&&!bookingSlotsForDate.has(slot.start)).length;
+    if($('bookingAvailabilityNote'))$('bookingAvailabilityNote').textContent=`${available} slot${available===1?'':'s'} available for ${$('bookingDate').value}. Booked times cannot be selected.`;
+    updateBookingSummary();
+  }
+  function loadBookingAvailability(force=false){
+    const date=$('bookingDate')?.value||tomorrowISO();
+    if(!$('bookingDate'))return;
+    $('bookingDate').min=tomorrowISO();
+    if(!$('bookingDate').value)$('bookingDate').value=date;
+    if(bookingSlotUnsubscribe){try{bookingSlotUnsubscribe()}catch(e){}bookingSlotUnsubscribe=null;}
+    bookingSlotsForDate=new Set();renderBookingSlots();
+    if(!currentUser)return;
+    if($('bookingAvailabilityNote'))$('bookingAvailabilityNote').textContent='Loading live availability…';
+    bookingSlotUnsubscribe=db.collection('booking_slots').where('date','==',date).onSnapshot(snap=>{
+      bookingSlotsForDate=new Set(snap.docs.filter(d=>d.data().booked!==false).map(d=>d.data().slotStart));
+      const selected=$('bookingSlotStart').value;
+      if(selected&&bookingSlotsForDate.has(selected)){$('bookingSlotStart').value='';$('bookingSlotEnd').value='';}
+      renderBookingSlots();
+    },err=>{
+      bookingSlotsForDate=new Set();renderBookingSlots();
+      if($('bookingAvailabilityNote'))$('bookingAvailabilityNote').textContent='Could not load live availability: '+authErrorMessage(err);
+    });
+  }
+  function resetBookingForm(){
+    const form=$('bookingForm');if(!form)return;
+    form.reset();hideError('bookingError');
+    const min=tomorrowISO();$('bookingDate').min=min;$('bookingDate').value=min;$('bookingSlotStart').value='';$('bookingSlotEnd').value='';
+    $('bookingCompanyName').value=bookingCompany();
+    loadBookingAvailability(true);updateBookingSummary();
+  }
+  async function submitShipmentBooking(){
+    hideError('bookingError');
+    const company=bookingCompany(),date=$('bookingDate').value,slot=selectedBookingSlot();
+    const doNumber=$('bookingDONumber').value.trim(),poNumber=$('bookingPONumber').value.trim(),vehicleNumber=$('bookingVehicleNumber').value.trim(),transportType=$('bookingTransportType').value,expectedRaw=$('bookingExpectedQty').value,remarks=$('bookingRemarks').value.trim();
+    const missing=[];
+    if(!company)missing.push('Company');if(!date)missing.push('Delivery Date');if(!slot)missing.push('Time Slot');if(!doNumber)missing.push('DO Number');if(!poNumber)missing.push('PO Number');if(!vehicleNumber)missing.push('Vehicle Number');if(!transportType)missing.push('Transport Type');if(expectedRaw==='')missing.push('Expected Quantity');
+    if(missing.length){showError('bookingError','Please complete: '+missing.join(', '));return;}
+    if(date<tomorrowISO()){showError('bookingError','Booking must be submitted at least 1 day before delivery.');return;}
+    if(slot.breakTime){showError('bookingError','1:00–2:00 PM is warehouse break time. Please choose another slot.');return;}
+    const duplicate=receivingRecords.some(r=>r.customer===company&&String(r.doNumber||'').toLowerCase()===doNumber.toLowerCase());
+    if(duplicate){showError('bookingError','This DO Number already exists for your company.');return;}
+    const recordId=newRecordId(),created=nowISO();
+    const record={id:recordId,doNumber,poNumber,customer:company,companyId:companyIdFor(company),shipmentDate:date,vehicleNumber,transportType,expectedQty:num(expectedRaw),actualQty:'',staffName:'',remarks,arrivalTime:'',startTime:'',completionTime:'',createdAt:created,updatedAt:created,updatedBy:currentUser?.email||'',source:'client-booking',bookingSlot:slot.label,bookingSlotStart:slot.start,bookingSlotEnd:slot.end,bookingCreatedAt:created,bookedBy:currentUser?.email||'',bookingStatus:'Scheduled Inbound'};
+    const slotRef=db.collection('booking_slots').doc(bookingSlotDocId(date,slot.start)),recRef=db.collection('receivings').doc(recordId);
+    const btn=$('submitBookingBtn');btn.disabled=true;btn.textContent='Saving booking…';
+    try{
+      await db.runTransaction(async tx=>{
+        const existing=await tx.get(slotRef);
+        if(existing.exists&&existing.data().booked!==false)throw new Error('SLOT_ALREADY_BOOKED');
+        tx.set(slotRef,{date,slotStart:slot.start,slotEnd:slot.end,slotLabel:slot.label,booked:true,receivingId:recordId,createdAt:created,updatedAt:created});
+        tx.set(recRef,record);
+      });
+      toast(`Booking confirmed: ${date} ${slot.label}. Added to Receiving Sheet as Scheduled Inbound.`,'success');
+      resetBookingForm();
+    }catch(err){
+      if(String(err?.message||'').includes('SLOT_ALREADY_BOOKED')){showError('bookingError','This time slot was just booked by another customer. Please select another available time.');loadBookingAvailability(true);}
+      else showError('bookingError',authErrorMessage(err));
+    }finally{btn.disabled=false;btn.textContent='📅 Confirm Booking';}
   }
   function setMenuOpen(open){
     $('sidebar').classList.toggle('open',open);
@@ -426,6 +514,7 @@
   }
 
   const TUTORIAL_UI = {
+    ms:{back:'Kembali',skip:'Langkau',never:'Jangan papar automatik',next:'Seterusnya →',finish:'Selesai ✓',completed:'Panduan selesai. Anda boleh membukanya semula pada bila-bila masa.',disabled:'Tutorial automatik telah dimatikan.'},
     en:{back:'Back',skip:'Skip',never:"Don't show automatically",next:'Next →',finish:'Finish ✓',completed:'Guide completed. You can replay it anytime.',disabled:'Automatic tutorial has been turned off.'},
     my:{back:'နောက်သို့',skip:'ကျော်မည်',never:'အလိုအလျောက် မပြတော့ပါ',next:'ရှေ့သို့ →',finish:'ပြီးပါပြီ ✓',completed:'လမ်းညွှန် ပြီးပါပြီ။ အချိန်မရွေး ပြန်ဖွင့်နိုင်ပါသည်။',disabled:'အလိုအလျောက် လမ်းညွှန်ကို ပိတ်ထားပါပြီ။'},
     zh:{back:'返回',skip:'跳过',never:'不再自动显示',next:'下一步 →',finish:'完成 ✓',completed:'操作指南已完成，您可以随时重新打开。',disabled:'自动教程已关闭。'}
@@ -437,6 +526,72 @@
     discrepancy:'Discrepancy Guide'
   };
   const TUTORIAL_TEXT = {
+    ms:{
+      general:[
+        ['Selamat datang, {user}!','Saya Qaiyum, panduan receiving anda. Saya akan tunjukkan aliran utama aplikasi ini dengan ringkas.'],
+        ['Menu utama anda','Gunakan butang tiga garisan ini untuk bergerak antara Dashboard, Shipment Booking, Receiving Sheet dan Discrepancy Report.'],
+        ['Paparan Dashboard','Dashboard menunjukkan status shipment secara langsung termasuk Scheduled Inbound, Arrived, Receiving, Completed, discrepancy dan sasaran empat jam.'],
+        ['Semak operasi dengan cepat','Kad KPI berubah mengikut company workspace. Gunakan filter untuk cari tarikh, status, DO atau PO dengan cepat.'],
+        ['Rancang shipment','Buka Shipment Booking untuk pilih tarikh dan slot masa sebelum penghantaran ke warehouse.'],
+        ['Semak slot sebelum booking','Setiap slot 30 minit hanya untuk seorang customer. FULL tidak boleh dipilih dan 1:00–2:00 PM ialah waktu rehat.'],
+        ['Pantau proses receiving','Buka Receiving Sheet untuk lihat shipment yang telah ditempah dan rekod proses dari Arrived sehingga Complete.'],
+        ['Lengkapkan setiap milestone','Timestamp direkod secara automatik supaya tempoh receiving dan sasaran empat jam boleh dipantau.'],
+        ['Urus discrepancy','Gunakan modul ini untuk barang rosak, kurang, lebih atau salah. Kes kekal berkaitan dengan DO dan PO.'],
+        ['Anda sudah bersedia','Itu ialah gambaran keseluruhan aplikasi. Setiap modul juga mempunyai butang Guide sendiri.']
+      ],
+      booking:[
+        ['Panduan Shipment Booking','Panduan ini menunjukkan cara menempah slot inbound terus dalam aplikasi.'],
+        ['Ikut peraturan booking','Buat booking sekurang-kurangnya 1 hari lebih awal. Waktu 1:00–2:00 PM tidak boleh ditempah kerana waktu rehat warehouse.'],
+        ['Pilih tarikh penghantaran','Pilih tarikh dahulu. Sistem akan memuatkan availability untuk tarikh itu sahaja.'],
+        ['Pilih slot 30 minit','AVAILABLE boleh dipilih. FULL bermaksud slot sudah diambil customer lain dan tidak boleh ditekan.'],
+        ['Isi maklumat shipment','Isi DO Number, PO Number, vehicle, transport type dan expected CTN/pallet quantity. Company diisi mengikut account anda.'],
+        ['Semak pilihan booking','Pastikan tarikh dan masa yang dipilih betul sebelum submit.'],
+        ['Sahkan booking','Tekan Confirm Booking sekali. Sistem akan mengunci slot tersebut supaya customer lain tidak boleh menempah masa yang sama.'],
+        ['Booking masuk ke Receiving Sheet','Selepas berjaya, shipment terus muncul dalam Receiving Sheet dengan status Scheduled Inbound.']
+      ],
+      receiving:[
+        ['Panduan Receiving','Shipment yang dibuat melalui booking sudah mempunyai DO, PO, tarikh, vehicle dan expected quantity.'],
+        ['Cari shipment yang dijadualkan','Cari rekod berstatus Scheduled Inbound menggunakan DO, PO, tarikh atau booking slot.'],
+        ['Maklumat sudah disediakan','Staff tidak perlu menaip semula maklumat booking. Buka rekod yang betul dan semak butiran shipment.'],
+        ['Tekan Arrived','Apabila shipment sampai dan diterima warehouse, tekan Arrived. Masa ketibaan dan timer empat jam direkod automatik.'],
+        ['Mulakan Receiving','Apabila checking dan counting bermula, tekan Start Receiving dengan segera.'],
+        ['Actual quantity','Jika kuantiti sebenar berbeza, masukkan Actual Received Qty sebelum Complete. Jika kosong, sistem menggunakan Expected Qty untuk aliran normal.'],
+        ['Tekan Complete','Apabila receiving benar-benar selesai, tekan Complete. Completion time dan total duration disimpan automatik.'],
+        ['Laporkan masalah jika perlu','Jika terdapat kerosakan atau quantity tidak sama, buka Discrepancy Report untuk rekod tindakan.'],
+        ['Cari rekod receiving','Semua rekod disimpan di Receiving Records dan boleh dicari mengikut DO, PO, tarikh atau status.'],
+        ['Betulkan rekod jika perlu','Staff/admin boleh tekan Edit untuk membetulkan butiran yang salah.'],
+        ['Simpan pembetulan','Tekan Save Record selepas semakan. Rekod yang sama akan dikemas kini tanpa membuang timestamp sedia ada.']
+      ],
+      receivingClient:[
+        ['Panduan Status Receiving','Halaman ini menunjukkan progress receiving untuk shipment company anda.'],
+        ['Shipment booking anda','Booking yang berjaya terus muncul sebagai Scheduled Inbound sebelum shipment sampai.'],
+        ['Cari shipment','Gunakan Date, DO Number, PO Number atau Status untuk mencari rekod.'],
+        ['Semak progress','Scheduled Inbound = telah ditempah, Arrived = sudah sampai, Receiving = sedang diperiksa, Completed = selesai.'],
+        ['Semak timeline dan quantity','Lihat Expected, Actual, Variance, Arrival, Start, Completion dan Total Duration.'],
+        ['Buka butiran lengkap','Tekan ikon mata di Actions untuk melihat semua butiran shipment dan remarks.']
+      ],
+      discrepancy:[
+        ['Panduan Discrepancy','Gunakan halaman ini apabila barang rosak, hilang, kurang, lebih, salah, rejected atau packaging rosak.'],
+        ['Masukkan rujukan kes','Isi Report Date, DO Number, PO Number, company, SKU dan product name supaya kes mudah dikesan.'],
+        ['Rekod perbezaan quantity','Isi Expected Quantity dan Actual Quantity. Variance dikira automatik.'],
+        ['Terangkan isu dan tindakan','Pilih Issue Type, Item Condition dan Action Taken, kemudian isi person in charge.'],
+        ['Lampirkan bukti gambar','Upload gambar yang jelas untuk barang rosak atau salah.'],
+        ['Simpan discrepancy','Semak butiran dan tekan Save Discrepancy. Kes akan muncul dalam table di bawah.'],
+        ['Cari kes yang disimpan','Semua kes boleh dicari dalam Discrepancy Cases bersama DO, PO, SKU, issue, action, PIC dan status.'],
+        ['Edit kes yang salah','Tekan Edit pada kes yang betul dan kemas kini maklumat yang perlu.'],
+        ['Ganti gambar jika perlu','Semasa edit, pilih gambar baharu untuk menggantikan bukti lama.'],
+        ['Simpan pembetulan','Tekan Save Discrepancy semula. Rekod yang sama akan dikemas kini.'],
+        ['Follow up sehingga selesai','Tukar status kepada Resolved selepas tindakan yang dipersetujui selesai.']
+      ],
+      discrepancyClient:[
+        ['Panduan Status Discrepancy','Halaman ini menunjukkan kes discrepancy untuk company anda.'],
+        ['Di mana kes dipaparkan','Scroll ke Discrepancy Cases. Client hanya boleh melihat kes untuk company sendiri.'],
+        ['Cari kes berkaitan','Padankan DO Number, PO Number, SKU atau product dan scroll table jika perlu.'],
+        ['Semak maklumat masalah','Lihat Expected, Actual, Variance, Issue, Condition, Action Taken dan PIC.'],
+        ['Pantau keputusan','Unresolved bermaksud masih perlu follow up; Resolved bermaksud tindakan telah selesai.'],
+        ['Buka laporan lengkap','Tekan ikon mata di Actions untuk melihat butiran penuh, remarks dan gambar bukti.']
+      ]
+    },
     en:{
       general:[
         ['Welcome, {user}!','I am Qaiyum, your receiving guide. I will show you the complete warehouse flow in under two minutes.'],
@@ -444,7 +599,7 @@
         ['Dashboard overview','Dashboard gives you the live receiving picture: pending, arrived, currently receiving, completed, discrepancies and the four-hour target.'],
         ['Read the operation at a glance','These KPI cards update from the selected company workspace. Use the filters above them to find a date, status, DO or PO quickly.'],
         ['Plan a shipment','Open Shipment Booking to check availability and submit a booking without leaving the app.'],
-        ['Check before booking','Green means available, BOOKED can still accept a booking, and BUSY means full. Book at least one day earlier and avoid the 1:00–2:00 PM break.'],
+        ['Check before booking','Each 30-minute slot can only be booked once. AVAILABLE can be selected, FULL is disabled for that date, and 1:00–2:00 PM is warehouse break time.'],
         ['Record the receiving flow','Open Receiving Sheet to record the shipment from arrival until completion.'],
         ['Complete each milestone','The timestamps calculate automatically and show whether the shipment was completed within the four-hour target.'],
         ['Handle discrepancies','Use this module for damaged, missing, excess or wrong items. Every case stays linked to its DO and PO for follow-up.'],
@@ -477,7 +632,7 @@
         ['Receiving Status Guide','This page is read-only for clients and shows receiving progress for the selected company.'],
         ['Where receiving records appear','Scroll below the filters to Receiving Records. Every shipment saved by the warehouse for your assigned company appears in this table.'],
         ['Find your shipment','Use Date, DO Number, PO Number or Status to filter the list. Only records for your assigned company are shown.'],
-        ['Check whether it has arrived','Pending means the shipment has not arrived. Arrived means it has reached the warehouse, Receiving means checking is in progress, and Completed means receiving is finished.'],
+        ['Check whether it has arrived','Scheduled Inbound means the shipment is booked but has not arrived. Arrived means it has reached the warehouse, Receiving means checking is in progress, and Completed means receiving is finished.'],
         ['Read the timeline and quantity','In the shipment row, review Expected, Actual, Variance, Arrival, Start, Completion and Total Duration. Scroll the table sideways when needed.'],
         ['Open the complete record','Go to Actions and press the eye button. The detail window shows the vehicle, quantities, variance, every timestamp, duration, current status and warehouse remarks.']
       ],
@@ -637,9 +792,43 @@
     }
   };
 
+  const TUTORIAL_BOOKING_V6 = {
+    en:[
+      ['Shipment Booking Guide','Reserve an inbound delivery slot directly inside this application.'],
+      ['Follow the booking rules','Book at least one day earlier. The 1:00–2:00 PM break cannot be selected.'],
+      ['Choose the delivery date','Availability is loaded for the selected date only.'],
+      ['Choose a 30-minute slot','AVAILABLE can be selected. FULL is already booked and is disabled for that date.'],
+      ['Complete shipment details','Enter DO Number, PO Number, vehicle, transport type and expected CTN/pallet quantity.'],
+      ['Review the selected slot','Check the company, date and selected time before submitting.'],
+      ['Confirm the booking','Press Confirm Booking once. The slot is locked so another customer cannot take the same time.'],
+      ['Automatic Receiving entry','The booking is immediately added to Receiving Sheet as Scheduled Inbound.']
+    ],
+    my:[
+      ['Shipment Booking လမ်းညွှန်','ဒီ app ထဲမှာ inbound delivery အတွက် time slot ကို တိုက်ရိုက် booking လုပ်နိုင်ပါသည်။'],
+      ['Booking စည်းမျဉ်းများ','Delivery မတိုင်မီ အနည်းဆုံး ၁ ရက်ကြိုတင် booking လုပ်ပါ။ ၁:၀၀–၂:၀၀ PM သည် warehouse နားချိန်ဖြစ်၍ မရွေးနိုင်ပါ။'],
+      ['Delivery date ရွေးပါ','ရွေးထားသော ရက်အတွက်သာ available time slot များကို system က ပြပါမည်။'],
+      ['မိနစ် ၃၀ slot ရွေးပါ','AVAILABLE ကို ရွေးနိုင်ပါသည်။ FULL သည် အခြား customer booking လုပ်ပြီးဖြစ်၍ ထိုရက်အတွက် နှိပ်၍မရပါ။'],
+      ['Shipment အချက်အလက်ဖြည့်ပါ','DO Number, PO Number, vehicle, transport type နှင့် expected CTN/pallet quantity ကို ဖြည့်ပါ။'],
+      ['ရွေးထားသော slot ကိုစစ်ပါ','Submit မလုပ်မီ company, date နှင့် time မှန်ကြောင်း စစ်ပါ။'],
+      ['Booking အတည်ပြုပါ','Confirm Booking ကို တစ်ကြိမ်နှိပ်ပါ။ အဲဒီ slot ကို lock လုပ်ပြီး အခြား customer မယူနိုင်တော့ပါ။'],
+      ['Receiving Sheet သို့ အလိုအလျောက်ဝင်မည်','Booking အောင်မြင်သည်နှင့် Receiving Sheet တွင် Scheduled Inbound အဖြစ် ချက်ချင်းပေါ်လာပါမည်။']
+    ],
+    zh:[
+      ['Shipment Booking 指南','直接在应用内预订入库送货时间。'],
+      ['预约规则','至少提前一天预约。下午 1:00–2:00 为仓库休息时间，不能选择。'],
+      ['选择送货日期','系统只显示所选日期的实时可用时段。'],
+      ['选择 30 分钟时段','AVAILABLE 可以选择；FULL 表示该日期此时段已被其他客户预订，无法点击。'],
+      ['填写货物资料','填写 DO Number、PO Number、车辆、运输方式及预计 CTN/托盘数量。'],
+      ['检查预约资料','提交前确认公司、日期和所选时间正确。'],
+      ['确认预约','点击一次 Confirm Booking。系统会锁定该时段，其他客户不能再选择相同时间。'],
+      ['自动加入 Receiving Sheet','预约成功后，货物会立即以 Scheduled Inbound 状态出现在 Receiving Sheet。']
+    ]
+  };
+
   const TUTORIAL_SPECIAL_TEXT = {
+    ms:{themeToggle:['Mod Tema','Tekan butang bulan atau matahari di bahagian atas untuk bertukar antara Light Mode dan Night Mode. Pilihan disimpan pada peranti ini.']},
     en:{themeToggle:['Theme Mode','Press this moon or sun button on the top bar to switch between Light Mode and Night Mode. Your selected mode stays saved on this device.']},
-    my:{themeToggle:['Night Mode / Light Mode','Tekan butang bulan atau matahari di bahagian atas ini untuk tukar antara Light Mode dan Night Mode. Pilihan mode akan disimpan pada peranti ini.']},
+    my:{themeToggle:['Night Mode / Light Mode','အပေါ်ဘက်ရှိ လ သို့မဟုတ် နေ ပုံစံ button ကိုနှိပ်ပြီး Light Mode နှင့် Night Mode အကြား ပြောင်းနိုင်ပါသည်။ ရွေးထားသော mode ကို ဒီ device မှာ သိမ်းထားပါမည်။']},
     zh:{themeToggle:['深色 / 浅色模式','点击顶部这个月亮或太阳按钮，即可在 Light Mode 与 Night Mode 之间切换。系统会在此设备保存您的模式选择。']}
   };
 
@@ -661,7 +850,7 @@
         {target:'.brand',section:'dashboard'},{target:'#mobileMenu',section:'dashboard'},{target:'button[data-section="dashboard"]',section:'dashboard',menu:true},{target:'.stats-grid',section:'dashboard'},{target:'button[data-section="booking"]',section:'dashboard',menu:true},{target:'.booking-rules',section:'booking'},{target:'button[data-section="receiving"]',section:'booking',menu:true},{target:currentUser?.role==='client'?'#receivingSection .section-head':'#receivingSection .form-card',section:'receiving'},{target:'button[data-section="discrepancy"]',section:'receiving',menu:true},{target:'#tutorialHelpBtn',section:'dashboard'},{target:'#themeToggleBtn',section:'dashboard',tutorialKey:'themeToggle'}
       ],
       booking:[
-        {target:'#bookingSection .section-head',section:'booking'},{target:'.booking-rules',section:'booking'},{target:'.booking-status-guide',section:'booking'},{target:'#bookingCalendarCard .booking-embed-head',section:'booking'},{target:'#bookingFormCard .booking-embed-head',section:'booking'},{target:'#bookingFormFrame',section:'booking'},{target:'#bookingFormFrame',section:'booking'},{target:'#bookingSubmitHelp',section:'booking'},{target:'#themeToggleBtn',section:'booking',tutorialKey:'themeToggle'}
+        {target:'#bookingSection .section-head',section:'booking'},{target:'.booking-rules',section:'booking'},{target:'#bookingDate',section:'booking'},{target:'#bookingSlotGrid',section:'booking'},{target:'#bookingFormCard .booking-embed-head',section:'booking'},{target:'#bookingDONumber',section:'booking'},{target:'#submitBookingBtn',section:'booking'},{target:'#bookingSubmitSummary',section:'booking'},{target:'#themeToggleBtn',section:'booking',tutorialKey:'themeToggle'}
       ],
       receiving:[
         {target:'#receivingSection .section-head',section:'receiving'},{target:'#doNumber',section:'receiving'},{target:'#expectedQty',section:'receiving'},{target:'#arrivedBtn',section:'receiving'},{target:'#startBtn',section:'receiving'},{target:'#actualQty',section:'receiving'},{target:'#completeBtn',section:'receiving'},{target:'#receivingSection .form-actions',section:'receiving'},{target:'#receivingEditorHint',section:'receiving'},{target:'[data-action="edit-rec"]',section:'receiving'},{target:'#receivingSection .form-actions',section:'receiving'},{target:'#themeToggleBtn',section:'receiving',tutorialKey:'themeToggle'}
@@ -681,7 +870,7 @@
   function tutorialSteps(){
     const group=tutorialTextGroup(),blueprint=tutorialBlueprint();
     const languagePack=TUTORIAL_TEXT[tutorialLanguage]||TUTORIAL_TEXT.en;
-    const textPack=languagePack[group]||TUTORIAL_TEXT.en[group]||TUTORIAL_TEXT.en.general;
+    const textPack=group==='booking'?(TUTORIAL_BOOKING_V6[tutorialLanguage]||TUTORIAL_BOOKING_V6.en):(languagePack[group]||TUTORIAL_TEXT.en[group]||TUTORIAL_TEXT.en.general);
     const specialPack=(TUTORIAL_SPECIAL_TEXT[tutorialLanguage]||TUTORIAL_SPECIAL_TEXT.en);
     return blueprint.map((step,index)=>{
       const pair=step.tutorialKey ? (specialPack[step.tutorialKey]||TUTORIAL_SPECIAL_TEXT.en[step.tutorialKey]) : (textPack[index]||TUTORIAL_TEXT.en.general[0]);
@@ -834,10 +1023,13 @@
   function showTutorialLanguagePicker(mode){
     tutorialMode=['general','booking','receiving','discrepancy'].includes(mode)?mode:'general';tutorialIndex=-1;
     $('languageGuideName').textContent=TUTORIAL_MODE_NAMES[tutorialMode];
+    const myanmarBtn=document.querySelector('[data-tutorial-language="my"]');
+    if(myanmarBtn) myanmarBtn.style.display=currentUser?.role==='staff'?'':'none';
     $('tutorialLayer').classList.add('show','language-pick');$('tutorialLayer').setAttribute('aria-hidden','false');setMenuOpen(false);requestAnimationFrame(positionTutorialGuide);
   }
   function beginTutorial(language){
-    tutorialLanguage=['en','my','zh'].includes(language)?language:'en';tutorialIndex=0;
+    if(language==='my'&&currentUser?.role!=='staff') language='en';
+    tutorialLanguage=['ms','en','my','zh'].includes(language)?language:'en';tutorialIndex=0;
     $('tutorialLayer').classList.remove('language-pick');renderTutorialStep();
   }
   function startTutorial(force=false,mode='general'){
@@ -859,7 +1051,7 @@
     $(`${name}Section`).classList.add('active');
     setMenuOpen(false);
     if(name==='dashboard') renderDashboard();
-    if(name==='booking') loadBookingFrames(true);
+    if(name==='booking') loadBookingAvailability(true);
     if(name==='receiving') renderReceivingTable();
     if(name==='discrepancy') renderDiscrepancyTable();
   }
@@ -871,7 +1063,7 @@
       id: $('recordId').value,
       doNumber: $('doNumber').value.trim(), poNumber: $('poNumber').value.trim(), customer: $('customerName').value.trim(), companyId: companyIdFor($('customerName').value.trim()),
       shipmentDate: $('shipmentDate').value, vehicleNumber: $('vehicleNumber').value.trim(), transportType: $('transportType').value,
-      expectedQty: num($('expectedQty').value), actualQty: $('actualQty').value==='' ? 0 : num($('actualQty').value),
+      expectedQty: num($('expectedQty').value), actualQty: $('actualQty').value==='' ? '' : num($('actualQty').value),
       staffName: $('staffName').value.trim(), remarks: $('receivingRemarks').value.trim(),
       arrivalTime: old?.arrivalTime || $('receivingForm').dataset.arrivalTime || '',
       startTime: old?.startTime || $('receivingForm').dataset.startTime || '',
@@ -900,7 +1092,7 @@
   function resetReceivingForm(){
     $('receivingForm').reset(); $('receivingEditId').value=''; $('recordId').value=newRecordId(); $('shipmentDate').value=todayISO(); $('variance').value='0';
     $('customerName').value=isAllCompanies()?'':activeCompany;
-    $('receivingForm').dataset.arrivalTime=''; $('receivingForm').dataset.startTime=''; $('receivingForm').dataset.completionTime='';
+    $('receivingForm').dataset.arrivalTime=''; $('receivingForm').dataset.startTime=''; $('receivingForm').dataset.completionTime=''; if($('receivingBookingSlot'))$('receivingBookingSlot').value='';
     $('formStatusBadge').className='status-badge status-pending'; $('formStatusBadge').textContent='Pending';
     $('timestampInfo').textContent=''; $('varianceWarning').classList.remove('show'); $('createDiscrepancyBtn').style.display='none'; hideError('receivingError');
     stopTimer(); $('liveTimer').textContent='4-hour timer: Not started'; $('liveTimer').classList.remove('warning');
@@ -911,7 +1103,7 @@
     if(activeCompany!==record.customer) setActiveCompany(record.customer, false);
     showSection('receiving');
     $('receivingEditId').value=record.id; $('recordId').value=record.id; $('doNumber').value=record.doNumber; $('poNumber').value=record.poNumber;
-    $('customerName').value=record.customer; $('shipmentDate').value=record.shipmentDate; $('vehicleNumber').value=record.vehicleNumber; $('transportType').value=record.transportType;
+    $('customerName').value=record.customer; $('shipmentDate').value=record.shipmentDate; if($('receivingBookingSlot'))$('receivingBookingSlot').value=record.bookingSlot||''; $('vehicleNumber').value=record.vehicleNumber; $('transportType').value=record.transportType;
     $('expectedQty').value=record.expectedQty; $('actualQty').value=record.actualQty; $('staffName').value=record.staffName; $('receivingRemarks').value=record.remarks || '';
     $('receivingForm').dataset.arrivalTime=record.arrivalTime||''; $('receivingForm').dataset.startTime=record.startTime||''; $('receivingForm').dataset.completionTime=record.completionTime||'';
     updateReceivingVariance(); updateFormStatus(record); updateTimestampInfo(record); updateStatusButtons(); startLiveTimerFor(record);
@@ -953,7 +1145,10 @@
   function stopTimer(){ if(timerInterval){clearInterval(timerInterval);timerInterval=null;} }
 
   async function handleStatusAction(action){
-    let record=getReceivingFormRecord();if(!validateReceiving(record,true))return;
+    let record=getReceivingFormRecord();
+    if(!record.staffName){record.staffName=currentUser?.displayName||currentUser?.email||'Warehouse Staff';$('staffName').value=record.staffName;}
+    if(action==='complete'&&$('actualQty').value===''){$('actualQty').value=String(record.expectedQty);record.actualQty=record.expectedQty;updateReceivingVariance();}
+    if(!validateReceiving(record,true))return;
     if(action==='arrived'){if(record.arrivalTime){toast('Arrival time is locked and cannot be changed.','warning');return;}record.arrivalTime=nowISO();$('receivingForm').dataset.arrivalTime=record.arrivalTime;}
     if(action==='start'){if(!record.arrivalTime){showError('receivingError','Click Arrived before Start Receiving.');return;}if(record.startTime){toast('Receiving start time is already recorded.','warning');return;}record.startTime=nowISO();$('receivingForm').dataset.startTime=record.startTime;}
     if(action==='complete'){if(!record.startTime){showError('receivingError','Click Start Receiving before Complete.');return;}if(record.completionTime){toast('Completion time is already recorded.','warning');return;}if($('actualQty').value===''){showError('receivingError','Enter Actual Received Quantity before completing.');return;}record.actualQty=num($('actualQty').value);record.completionTime=nowISO();$('receivingForm').dataset.completionTime=record.completionTime;}
@@ -962,6 +1157,16 @@
     const status=baseStatus(record);toast(action==='arrived'?'Arrival time recorded.':action==='start'?'Receiving started.':status==='Exceeded 4 Hours'?'Completed, but exceeded 4 hours.':'Receiving completed.',status==='Exceeded 4 Hours'?'warning':'success');
     if(status==='Exceeded 4 Hours')showError('receivingError','Warning: Receiving process exceeded the four-hour target.');else hideError('receivingError');
   }
+  async function handleRecordMilestone(record,action){
+    if(!requireEditor())return;
+    const patch={updatedAt:nowISO(),updatedBy:currentUser?.email||'',staffName:record.staffName||currentUser?.displayName||currentUser?.email||'Warehouse Staff'};
+    if(action==='arrived'){if(record.arrivalTime)return;patch.arrivalTime=nowISO();}
+    if(action==='start'){if(!record.arrivalTime){toast('Mark Arrived first.','warning');return;}if(record.startTime)return;patch.startTime=nowISO();}
+    if(action==='complete'){if(!record.startTime){toast('Start Receiving first.','warning');return;}if(record.completionTime)return;patch.completionTime=nowISO();if(record.actualQty===''||record.actualQty==null)patch.actualQty=num(record.expectedQty);}
+    try{await db.collection('receivings').doc(record.id).set(patch,{merge:true});toast(action==='arrived'?'Shipment marked Arrived.':action==='start'?'Receiving started.':'Receiving completed.','success');}
+    catch(err){toast(authErrorMessage(err),'warning');}
+  }
+
   function filteredReceiving(useDashboard=false){
     const p=useDashboard?'dashFilter':'recFilter';
     const date=$(p+'Date')?.value||'', customer=($(p+'Customer')?.value||'').toLowerCase(), status=$(p+'Status')?.value||'', doNum=($(p+'DO')?.value||'').toLowerCase(), po=($(p+'PO')?.value||'').toLowerCase();
@@ -976,8 +1181,11 @@
     const rows=filteredReceiving(false); $('receivingCount').textContent=`${rows.length} record${rows.length===1?'':'s'}`;
     $('receivingTableBody').innerHTML=rows.length?rows.map(r=>{
       const v=variance(r.expectedQty,r.actualQty), bs=baseStatus(r);
-      return `<tr><td>${esc(r.id)}</td><td>${esc(r.shipmentDate)}</td><td><strong>${esc(r.doNumber)}</strong></td><td>${esc(r.poNumber)}</td><td>${esc(r.customer)}</td><td>${esc(r.vehicleNumber)}</td><td>${r.expectedQty}</td><td>${r.actualQty}</td><td style="font-weight:800;color:${v!==0?'var(--dark-red)':'inherit'}">${v>0?'+':''}${v}</td><td>${esc(fmtTime(r.arrivalTime))}</td><td>${esc(fmtTime(r.startTime))}</td><td>${esc(fmtTime(r.completionTime))}</td><td>${esc(r.completionTime?formatDuration(durationMs(r)):'-')}</td><td>${statusBadge(bs)} ${hasDiscrepancy(r)?statusBadge('Discrepancy'):''}</td><td><div class="action-group">${actionButton('view-rec',r.id,'View receiving details','view')}${actionButton('edit-rec',r.id,'Edit receiving record','edit')}${actionButton('print-rec',r.id,'Print receiving record','print')}${actionButton('export-rec',r.id,'Download receiving record','download')}${actionButton('delete-rec',r.id,'Delete receiving record','delete')}</div></td></tr>`;
-    }).join(''):`<tr class="empty-row"><td colspan="15">No receiving records found.</td></tr>`;
+      const milestone=isEditor()?(bs==='Scheduled Inbound'||bs==='Pending'?`<button class="icon-btn milestone-btn" data-action="arrive-rec" data-id="${esc(r.id)}" title="Mark Arrived" aria-label="Mark Arrived">🚚</button>`:bs==='Arrived'?`<button class="icon-btn milestone-btn" data-action="start-rec" data-id="${esc(r.id)}" title="Start Receiving" aria-label="Start Receiving">▶</button>`:bs==='Receiving'?`<button class="icon-btn milestone-btn" data-action="complete-rec" data-id="${esc(r.id)}" title="Complete Receiving" aria-label="Complete Receiving">✓</button>`:''):'';
+      const actual=(r.actualQty===''||r.actualQty==null)?'-':r.actualQty;
+      const varianceText=(r.actualQty===''||r.actualQty==null)?'-':`${v>0?'+':''}${v}`;
+      return `<tr><td>${esc(r.id)}</td><td>${esc(r.shipmentDate)}</td><td>${esc(r.bookingSlot||'-')}</td><td><strong>${esc(r.doNumber)}</strong></td><td>${esc(r.poNumber)}</td><td>${esc(r.customer)}</td><td>${esc(r.vehicleNumber)}</td><td>${r.expectedQty}</td><td>${actual}</td><td style="font-weight:800;color:${r.completionTime&&v!==0?'var(--dark-red)':'inherit'}">${varianceText}</td><td>${esc(fmtTime(r.arrivalTime))}</td><td>${esc(fmtTime(r.startTime))}</td><td>${esc(fmtTime(r.completionTime))}</td><td>${esc(r.completionTime?formatDuration(durationMs(r)):'-')}</td><td>${statusBadge(bs)} ${hasDiscrepancy(r)?statusBadge('Discrepancy'):''}</td><td><div class="action-group">${milestone}${actionButton('view-rec',r.id,'View receiving details','view')}${actionButton('edit-rec',r.id,'Edit receiving record','edit')}${actionButton('print-rec',r.id,'Print receiving record','print')}${actionButton('export-rec',r.id,'Download receiving record','download')}${actionButton('delete-rec',r.id,'Delete receiving record','delete')}</div></td></tr>`;
+    }).join(''):`<tr class="empty-row"><td colspan="16">No receiving records found.</td></tr>`;
   }
 
   async function deleteReceiving(id){
@@ -1044,7 +1252,7 @@
   }
 
   function detailHTML(obj,type){
-    const fields=type==='receiving'?[['Record ID',obj.id],['Shipment Date',obj.shipmentDate],['DO Number',obj.doNumber],['PO Number',obj.poNumber],['Customer',obj.customer],['Vehicle Number',obj.vehicleNumber],['Transport Type',obj.transportType],['Expected Qty',obj.expectedQty],['Actual Qty',obj.actualQty],['Variance',variance(obj.expectedQty,obj.actualQty)],['Staff',obj.staffName],['Arrival Time',fmtDateTime(obj.arrivalTime)],['Start Time',fmtDateTime(obj.startTime)],['Completion Time',fmtDateTime(obj.completionTime)],['Total Duration',obj.completionTime?formatDuration(durationMs(obj)):'-'],['Status',baseStatus(obj)],['Remarks',obj.remarks||'-']]:[['Report ID',obj.id],['Report Date',obj.reportDate],['DO Number',obj.doNumber],['PO Number',obj.poNumber],['Customer',obj.customer],['SKU',obj.sku],['Product Name',obj.productName],['Expected Qty',obj.expectedQty],['Actual Qty',obj.actualQty],['Variance',variance(obj.expectedQty,obj.actualQty)],['Issue Type',obj.issueType],['Item Condition',obj.itemCondition],['Action Taken',obj.actionTaken],['Person in Charge',obj.pic],['Status',obj.resolved?'Resolved':'Unresolved'],['Remarks',obj.remarks||'-']];
+    const fields=type==='receiving'?[['Record ID',obj.id],['Shipment Date',obj.shipmentDate],['Booking Slot',obj.bookingSlot||'-'],['DO Number',obj.doNumber],['PO Number',obj.poNumber],['Customer',obj.customer],['Vehicle Number',obj.vehicleNumber],['Transport Type',obj.transportType],['Expected Qty',obj.expectedQty],['Actual Qty',obj.actualQty],['Variance',variance(obj.expectedQty,obj.actualQty)],['Staff',obj.staffName],['Arrival Time',fmtDateTime(obj.arrivalTime)],['Start Time',fmtDateTime(obj.startTime)],['Completion Time',fmtDateTime(obj.completionTime)],['Total Duration',obj.completionTime?formatDuration(durationMs(obj)):'-'],['Status',baseStatus(obj)],['Remarks',obj.remarks||'-']]:[['Report ID',obj.id],['Report Date',obj.reportDate],['DO Number',obj.doNumber],['PO Number',obj.poNumber],['Customer',obj.customer],['SKU',obj.sku],['Product Name',obj.productName],['Expected Qty',obj.expectedQty],['Actual Qty',obj.actualQty],['Variance',variance(obj.expectedQty,obj.actualQty)],['Issue Type',obj.issueType],['Item Condition',obj.itemCondition],['Action Taken',obj.actionTaken],['Person in Charge',obj.pic],['Status',obj.resolved?'Resolved':'Unresolved'],['Remarks',obj.remarks||'-']];
     return `<div class="detail-grid">${fields.map(([k,v])=>`<div class="detail-item"><small>${esc(k)}</small><div>${esc(v)}</div></div>`).join('')}</div>${type==='discrepancy'&&obj.photo?`<div style="margin-top:15px"><small style="font-weight:800">Photo</small><br><img class="photo-preview" src="${obj.photo}" alt="Discrepancy photo"></div>`:''}`;
   }
   function openDetail(obj,type){$('modalTitle').textContent=type==='receiving'?'Receiving Record Details':'Discrepancy Report Details';$('modalBody').innerHTML=detailHTML(obj,type);$('detailModal').classList.add('show');}
@@ -1054,7 +1262,7 @@
   }
   function csvEscape(v){const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
   function downloadCSV(filename,headers,rows){const csv=[headers.join(','),...rows.map(r=>r.map(csvEscape).join(','))].join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
-  function exportReceiving(records=receivingRecords){downloadCSV(`warehouse_receiving_${safeFilePart(workspaceName())}.csv`,['Record ID','Shipment Date','DO Number','PO Number','Customer','Vehicle Number','Transport Type','Expected Qty','Actual Qty','Variance','Staff','Arrival Time','Receiving Start Time','Completion Time','Total Duration','Status','Remarks'],records.map(r=>[r.id,r.shipmentDate,r.doNumber,r.poNumber,r.customer,r.vehicleNumber,r.transportType,r.expectedQty,r.actualQty,variance(r.expectedQty,r.actualQty),r.staffName,fmtDateTime(r.arrivalTime),fmtDateTime(r.startTime),fmtDateTime(r.completionTime),r.completionTime?formatDuration(durationMs(r)):'',baseStatus(r),r.remarks]));}
+  function exportReceiving(records=receivingRecords){downloadCSV(`warehouse_receiving_${safeFilePart(workspaceName())}.csv`,['Record ID','Shipment Date','Booking Slot','DO Number','PO Number','Customer','Vehicle Number','Transport Type','Expected Qty','Actual Qty','Variance','Staff','Arrival Time','Receiving Start Time','Completion Time','Total Duration','Status','Remarks'],records.map(r=>[r.id,r.shipmentDate,r.bookingSlot||'',r.doNumber,r.poNumber,r.customer,r.vehicleNumber,r.transportType,r.expectedQty,r.actualQty,variance(r.expectedQty,r.actualQty),r.staffName,fmtDateTime(r.arrivalTime),fmtDateTime(r.startTime),fmtDateTime(r.completionTime),r.completionTime?formatDuration(durationMs(r)):'',baseStatus(r),r.remarks]));}
   function exportDiscrepancies(){const rows=workspaceDiscrepancyRecords();downloadCSV(`warehouse_discrepancy_${safeFilePart(workspaceName())}.csv`,['Report ID','Report Date','DO Number','PO Number','Customer','SKU','Product Name','Expected Qty','Actual Qty','Variance','Issue Type','Item Condition','Action Taken','PIC','Status','Remarks'],rows.map(d=>[d.id,d.reportDate,d.doNumber,d.poNumber,d.customer,d.sku,d.productName,d.expectedQty,d.actualQty,variance(d.expectedQty,d.actualQty),d.issueType,d.itemCondition,d.actionTaken,d.pic,d.resolved?'Resolved':'Unresolved',d.remarks]));}
   function refreshDatalists(){
     $('customerList').innerHTML=COMPANIES.map(x=>`<option value="${esc(x)}">`).join('');
@@ -1067,6 +1275,9 @@
     $('discrepancyCompanyWarning').classList.toggle('show',noCompany);
     $('receivingForm').querySelector('button[type="submit"]').disabled=noCompany;
     $('discrepancyForm').querySelector('button[type="submit"]').disabled=noCompany;
+    if($('bookingCompanyWarning'))$('bookingCompanyWarning').classList.toggle('show',noCompany&&currentUser?.role!=='client');
+    if($('bookingCompanyName'))$('bookingCompanyName').value=bookingCompany();
+    if($('submitBookingBtn'))$('submitBookingBtn').disabled=noCompany&&currentUser?.role!=='client';
     if(noCompany){$('customerName').value='';$('discCustomer').value='';$('createDiscrepancyBtn').style.display='none';}
     else{
       if(!$('receivingEditId').value)$('customerName').value=activeCompany;
@@ -1121,8 +1332,11 @@
   $('sidebarCloseBtn').addEventListener('click',()=>setMenuOpen(false));
   $('menuBackdrop').addEventListener('click',()=>setMenuOpen(false));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenuOpen(false)});
-  $('refreshCalendarBtn').addEventListener('click',()=>{reloadBookingFrame('bookingCalendarFrame');toast('Availability calendar refreshed.')});
-  $('resetBookingFormBtn').addEventListener('click',()=>{reloadBookingFrame('bookingFormFrame');toast('Booking form reloaded.','warning')});
+  $('refreshCalendarBtn').addEventListener('click',()=>{loadBookingAvailability(true);toast('Live booking availability refreshed.')});
+  $('resetBookingFormBtn').addEventListener('click',()=>{resetBookingForm();toast('Booking form reset.','warning')});
+  $('bookingDate').addEventListener('change',()=>{$('bookingSlotStart').value='';$('bookingSlotEnd').value='';loadBookingAvailability(true)});
+  $('bookingSlotGrid').addEventListener('click',e=>{const b=e.target.closest('[data-booking-slot]');if(!b||b.disabled)return;const slot=BOOKING_TIME_SLOTS.find(x=>x.start===b.dataset.bookingSlot);if(!slot)return;$('bookingSlotStart').value=slot.start;$('bookingSlotEnd').value=slot.end;renderBookingSlots();});
+  $('bookingForm').addEventListener('submit',async e=>{e.preventDefault();await submitShipmentBooking()});
   $('closeModal').addEventListener('click',()=>$('detailModal').classList.remove('show'));
   $('detailModal').addEventListener('click',e=>{if(e.target===$('detailModal'))$('detailModal').classList.remove('show')});
   $('expectedQty').addEventListener('input',updateReceivingVariance);$('actualQty').addEventListener('input',updateReceivingVariance);
@@ -1150,7 +1364,7 @@
   $('resetReceivingFilters').addEventListener('click',()=>{['recFilterDate','recFilterCustomer','recFilterStatus','recFilterDO','recFilterPO'].forEach(id=>$(id).value='');renderReceivingTable()});
   $('resetDashboardFilters').addEventListener('click',()=>{['dashFilterDate','dashFilterCustomer','dashFilterStatus','dashFilterDO','dashFilterPO'].forEach(id=>$(id).value='');renderDashboard()});
 
-  $('receivingTableBody').addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const r=receivingRecords.find(x=>x.id===b.dataset.id);if(!r)return;const a=b.dataset.action;if(a==='view-rec')openDetail(r,'receiving');if(a==='edit-rec'&&requireEditor())populateReceivingForm(r);if(a==='delete-rec'&&requireEditor())await deleteReceiving(r.id);if(a==='print-rec')printRecord(r,'receiving');if(a==='export-rec')exportReceiving([r]);});
+  $('receivingTableBody').addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const r=receivingRecords.find(x=>x.id===b.dataset.id);if(!r)return;const a=b.dataset.action;if(a==='view-rec')openDetail(r,'receiving');if(a==='arrive-rec')await handleRecordMilestone(r,'arrived');if(a==='start-rec')await handleRecordMilestone(r,'start');if(a==='complete-rec')await handleRecordMilestone(r,'complete');if(a==='edit-rec'&&requireEditor())populateReceivingForm(r);if(a==='delete-rec'&&requireEditor())await deleteReceiving(r.id);if(a==='print-rec')printRecord(r,'receiving');if(a==='export-rec')exportReceiving([r]);});
   $('discrepancyTableBody').addEventListener('click',async e=>{const b=e.target.closest('[data-action]');if(!b)return;const d=discrepancyRecords.find(x=>x.id===b.dataset.id);if(!d)return;const a=b.dataset.action;if(a==='view-disc')openDetail(d,'discrepancy');if(a==='edit-disc'&&requireEditor())populateDiscrepancyForm(d);if(a==='delete-disc'&&requireEditor())await deleteDiscrepancy(d.id);if(a==='resolve-disc'&&requireEditor())await toggleResolved(d.id);if(a==='print-disc')printRecord(d,'discrepancy');});
   $('photoUpload').addEventListener('change',async e=>{const file=e.target.files[0];if(!file){selectedPhotoData='';$('photoStatus').textContent='';return;}try{$('photoStatus').textContent='Compressing photo...';selectedPhotoData=await compressImage(file);$('photoStatus').textContent='Photo ready to save online.';hideError('discrepancyError');}catch(err){e.target.value='';selectedPhotoData='';showError('discrepancyError',err.message);$('photoStatus').textContent='';}});
   window.addEventListener('resize',()=>{if($('dashboardSection').classList.contains('active'))drawChart()});
@@ -1158,13 +1372,25 @@
   window.addEventListener('scroll',positionTutorialTarget,{passive:true});
   document.addEventListener('keydown',e=>{if(!$('tutorialLayer').classList.contains('show'))return;if(e.key==='Escape')closeTutorial(false);if($('tutorialLayer').classList.contains('language-pick'))return;if(e.key==='ArrowRight')moveTutorial(1);if(e.key==='ArrowLeft')moveTutorial(-1)});
   setInterval(updateCurrentDateTime,1000);
-  setInterval(()=>{if($('bookingSection').classList.contains('active')) reloadBookingFrame('bookingCalendarFrame')},60000);
 
+
+  const LOGIN_I18N={
+    en:{subtitle:'Sign in to open your secure online company workspace.',idLabel:'Login ID or Email',idPlaceholder:'Example: admin, airali or email',password:'Password',passwordPlaceholder:'Enter password',submit:'🔐 Sign In',help:'<strong>First admin login:</strong> admin / Admin@2026<br/><span style="opacity:.82">Client may use company Login ID (example: airali) or the Firebase email given by admin.</span>',missing:'Enter your Login ID/email and password.'},
+    ms:{subtitle:'Log masuk untuk membuka ruang kerja syarikat anda dengan selamat.',idLabel:'ID Log Masuk atau E-mel',idPlaceholder:'Contoh: admin, airali atau e-mel',password:'Kata Laluan',passwordPlaceholder:'Masukkan kata laluan',submit:'🔐 Log Masuk',help:'<strong>Log masuk admin pertama:</strong> admin / Admin@2026<br/><span style="opacity:.82">Client boleh menggunakan Login ID syarikat (contoh: airali) atau e-mel Firebase yang diberikan oleh admin.</span>',missing:'Masukkan ID log masuk/e-mel dan kata laluan.'},
+    zh:{subtitle:'登录以打开您公司的安全在线工作区。',idLabel:'登录 ID 或电子邮件',idPlaceholder:'例如：admin、airali 或电子邮件',password:'密码',passwordPlaceholder:'输入密码',submit:'🔐 登录',help:'<strong>首次管理员登录：</strong> admin / Admin@2026<br/><span style="opacity:.82">客户可使用公司 Login ID（例如 airali）或管理员提供的 Firebase 电子邮件。</span>',missing:'请输入登录 ID/电子邮件和密码。'}
+  };
+  function applyLoginLanguage(language){
+    loginLanguage=['ms','en','zh'].includes(language)?language:'en';localStorage.setItem(LOGIN_LANGUAGE_KEY,loginLanguage);
+    const t=LOGIN_I18N[loginLanguage];$('loginSubtitle').textContent=t.subtitle;$('loginIdLabel').textContent=t.idLabel;$('loginId').placeholder=t.idPlaceholder;$('loginPasswordLabel').textContent=t.password;$('loginPassword').placeholder=t.passwordPlaceholder;$('loginSubmitBtn').textContent=t.submit;$('loginHelp').innerHTML=t.help;
+    document.querySelectorAll('[data-login-language]').forEach(b=>b.classList.toggle('active',b.dataset.loginLanguage===loginLanguage));
+  }
+  document.querySelectorAll('[data-login-language]').forEach(b=>b.addEventListener('click',()=>applyLoginLanguage(b.dataset.loginLanguage)));
+  applyLoginLanguage(loginLanguage);
 
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();hideError('loginError');
     const loginHint=$('loginId').value.trim().toLowerCase(),password=$('loginPassword').value;
-    if(!loginHint||!password){showError('loginError','Enter your Login ID/email and password.');return;}
+    if(!loginHint||!password){showError('loginError',(LOGIN_I18N[loginLanguage]||LOGIN_I18N.en).missing);return;}
     const email=resolveLoginEmail(loginHint);
     localStorage.setItem(LAST_LOGIN_HINT_KEY,loginHint);
     try{
@@ -1202,7 +1428,7 @@
     if(b.dataset.accountAction==='toggle'){try{await db.collection('users').doc(acc.uid).update({active:!acc.active,updatedAt:nowISO(),updatedBy:currentUser.email});}catch(err){toast(authErrorMessage(err),'warning');}}
   });
 
-  applyTheme(currentTheme,false);mergeCompanyNames();updateWorkspaceUI();resetReceivingForm();resetDiscrepancyForm();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();
+  applyTheme(currentTheme,false);mergeCompanyNames();updateWorkspaceUI();resetReceivingForm();resetDiscrepancyForm();resetBookingForm();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();
   auth.onAuthStateChanged(async user=>{
     if(!user){stopSubscriptions();currentUser=null;document.body.className='logged-out';applyTheme(currentTheme,false);return;}
     if(currentUser?.uid===user.uid)return;

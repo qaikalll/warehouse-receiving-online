@@ -1,12 +1,17 @@
-MOBILE QAIYUM GUIDE FIX
+WRS v6 — Smart Booking + Malay/English/Chinese Login + Role Tutorial Languages
 
-Upload all files in this folder to the ROOT of:
-qaikalll/warehouse-receiving-online
+Upload ALL files in this folder to the ROOT of GitHub repository qaikalll/warehouse-receiving-online and replace existing files.
+Commit directly to main, then wait for GitHub Actions / Pages deployment to turn green.
 
-Choose: Commit directly to main.
-The Pages deployment should run automatically.
+Main changes:
+- Live 30-minute booking slots; one customer per slot/date
+- Booking auto-creates Receiving Sheet record as Scheduled Inbound
+- Staff can update Arrived / Start Receiving / Complete directly from the table
+- Login language: Bahasa Melayu / English / Chinese
+- Tutorial: adds Bahasa Melayu; Myanmar hidden for Client but retained for Staff/Admin
 
-After the workflow turns green, open:
-https://qaikalll.github.io/warehouse-receiving-online/?v=20260807-mobile-guide-v5
-
-On iPhone, close the installed app completely and reopen it. If needed, open the link once in Safari first.
+V6.1 tutorial language correction:
+- Client: Bahasa Melayu, English, Chinese
+- Admin: Bahasa Melayu, English, Chinese
+- Staff only: Bahasa Melayu, English, Myanmar, Chinese
+- Myanmar tutorial is hidden and blocked for Client/Admin accounts.

@@ -433,3 +433,49 @@
   .install-card h3{margin:0 0 8px}.install-card p{margin:0;color:var(--muted,#6c7a90);line-height:1.55}.install-card ol{padding-left:22px;line-height:1.8}.install-close{width:100%;margin-top:18px;border:0;border-radius:12px;padding:12px 16px;background:linear-gradient(135deg,#5a3fc0,#e3138c);color:#fff;font-weight:900;cursor:pointer}
   @media(display-mode:standalone){.install-app-btn{display:none!important}}
   @media(max-width:680px){.install-app-btn .install-label{display:none}.install-app-btn{width:38px;height:38px;padding:0;justify-content:center}}
+
+/* ===== v6 smart booking + language update ===== */
+.login-language-switch{display:flex;justify-content:center;gap:8px;margin:0 0 16px}
+.login-language-btn{border:1px solid #cfd9ea;background:#fff;color:#30415e;border-radius:999px;padding:7px 13px;font:800 12px/1 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer;transition:.18s ease}
+.login-language-btn:hover{transform:translateY(-1px);border-color:#7aa7e8}
+.login-language-btn.active{background:var(--blue,#0b63ce);border-color:var(--blue,#0b63ce);color:#fff;box-shadow:0 6px 18px rgba(11,99,206,.18)}
+body.theme-dark .login-language-btn{background:#17243d;color:#dce7f7;border-color:#344866}
+body.theme-dark .login-language-btn.active{background:#4a8ee8;color:#fff;border-color:#4a8ee8}
+
+body.role-client .tutorial-language-myanmar{display:none!important}
+.status-scheduled{background:#e8f2ff!important;color:#0b5cad!important;border-color:#a8c9ef!important}
+
+.booking-native-card{padding:18px;margin-bottom:18px}
+.booking-date-row{display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:16px;align-items:end;margin-top:16px}
+.booking-selected-slot{min-height:44px;display:flex;align-items:center;justify-content:center;padding:10px 14px;border:1px dashed #a9bad2;border-radius:12px;background:rgba(255,255,255,.72);font-weight:800;color:#33435e}
+.booking-slot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+.booking-slot{appearance:none;border:1px solid #c7d6ea;background:#fff;border-radius:12px;padding:12px 10px;min-height:64px;cursor:pointer;text-align:left;transition:.16s ease;color:#24334d}
+.booking-slot strong{display:block;font-size:13px;line-height:1.2;margin-bottom:5px}
+.booking-slot span{font-size:10px;font-weight:900;letter-spacing:.06em}
+.booking-slot.available:hover{transform:translateY(-1px);border-color:#4d96e6;box-shadow:0 7px 18px rgba(13,79,145,.11)}
+.booking-slot.available span{color:#1d7b46}
+.booking-slot.selected{border:2px solid #0b63ce;background:#eef6ff;box-shadow:0 7px 20px rgba(11,99,206,.14)}
+.booking-slot.selected span{color:#0b63ce}
+.booking-slot.full,.booking-slot.break{cursor:not-allowed;opacity:.82}
+.booking-slot.full{background:#fff0f0;border-color:#efb3b3;color:#9f2525}
+.booking-slot.break{background:#f1f3f6;border-color:#d6dce5;color:#687489}
+.booking-availability-note{margin-top:10px}
+.booking-form-grid{margin-top:14px}
+.booking-submit-summary{margin:14px 0 0;padding:11px 13px;border-radius:10px;background:#f2f7ff;border:1px solid #cbdcf2;color:#33435e;font-weight:700;font-size:12px}
+.milestone-btn{font-weight:900;color:#0b63ce!important;background:#eef6ff!important;border-color:#b7d2f1!important}
+body.theme-dark .booking-selected-slot,body.theme-dark .booking-slot{background:#17243d;color:#e6edf7;border-color:#344866}
+body.theme-dark .booking-slot.selected{background:#17345b;border-color:#5d9be8}
+body.theme-dark .booking-slot.full{background:#3b2329;color:#ffb9b9;border-color:#75414a}
+body.theme-dark .booking-slot.break{background:#252d3a;color:#aeb8c7;border-color:#414b5b}
+body.theme-dark .booking-submit-summary{background:#172b47;border-color:#31527b;color:#dce7f7}
+
+@media(max-width:900px){.booking-slot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){
+  .login-language-switch{margin-bottom:13px}
+  .login-language-btn{padding:7px 12px}
+  .booking-native-card{padding:14px}
+  .booking-date-row{grid-template-columns:1fr;gap:10px}
+  .booking-slot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .booking-slot{min-height:60px;padding:10px 9px}
+  .booking-slot strong{font-size:12px}
+}
