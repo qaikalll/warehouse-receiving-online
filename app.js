@@ -693,8 +693,36 @@
     if(target&&target.getClientRects().length)return target;
     return document.querySelector('#'+step.section+'Section .section-head')||$('mobileMenu');
   }
+  function positionTutorialGuide(){
+    const guide=document.querySelector('.tutorial-guide-wrap');
+    const layer=$('tutorialLayer');
+    if(!guide||!layer)return;
+    if(innerWidth>680){
+      ['top','bottom','right','width','height','opacity'].forEach(name=>guide.style.removeProperty(name));
+      return;
+    }
+    const languagePick=layer.classList.contains('language-pick');
+    const panel=languagePick?$('tutorialLanguagePanel'):document.querySelector('.tutorial-dialog');
+    const panelRect=panel?.getBoundingClientRect();
+    const topbarBottom=document.querySelector('.topbar')?.getBoundingClientRect().bottom||0;
+    const panelTop=(panelRect&&panelRect.top>topbarBottom+100)?panelRect.top:innerHeight*.72;
+    const gap=8;
+    const bottom=Math.max(0,innerHeight-panelTop+gap);
+    const availableHeight=Math.max(150,panelTop-topbarBottom-gap);
+    const height=Math.max(150,Math.min(300,innerHeight*.31,availableHeight));
+    Object.assign(guide.style,{
+      top:'auto',
+      bottom:Math.round(bottom)+'px',
+      right:'-8px',
+      width:Math.round(Math.min(180,Math.max(138,innerWidth*.37)))+'px',
+      height:Math.round(height)+'px',
+      opacity:'1'
+    });
+  }
   function positionTutorialTarget(){
-    if(!$('tutorialLayer').classList.contains('show')||$('tutorialLayer').classList.contains('language-pick'))return;
+    if(!$('tutorialLayer').classList.contains('show'))return;
+    positionTutorialGuide();
+    if($('tutorialLayer').classList.contains('language-pick'))return;
     const steps=tutorialSteps(),step=steps[tutorialIndex],target=tutorialTarget(step);if(!target)return;
     const rect=target.getBoundingClientRect(),pad=8;
     const left=Math.max(7,rect.left-pad),top=Math.max(7,rect.top-pad),right=Math.min(innerWidth-7,rect.right+pad),bottom=Math.min(innerHeight-7,rect.bottom+pad);
@@ -806,7 +834,7 @@
   function showTutorialLanguagePicker(mode){
     tutorialMode=['general','booking','receiving','discrepancy'].includes(mode)?mode:'general';tutorialIndex=-1;
     $('languageGuideName').textContent=TUTORIAL_MODE_NAMES[tutorialMode];
-    $('tutorialLayer').classList.add('show','language-pick');$('tutorialLayer').setAttribute('aria-hidden','false');setMenuOpen(false);
+    $('tutorialLayer').classList.add('show','language-pick');$('tutorialLayer').setAttribute('aria-hidden','false');setMenuOpen(false);requestAnimationFrame(positionTutorialGuide);
   }
   function beginTutorial(language){
     tutorialLanguage=['en','my','zh'].includes(language)?language:'en';tutorialIndex=0;

@@ -16,6 +16,6 @@
   });
   if(c)c.addEventListener('click',()=>m.classList.remove('show'));
   if(m)m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')});
-  if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'}).then(r=>r.update()).catch(console.warn);
+  if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(console.warn);
  });
 })();

@@ -1,0 +1,12 @@
+MOBILE QAIYUM GUIDE FIX
+
+Upload all files in this folder to the ROOT of:
+qaikalll/warehouse-receiving-online
+
+Choose: Commit directly to main.
+The Pages deployment should run automatically.
+
+After the workflow turns green, open:
+https://qaikalll.github.io/warehouse-receiving-online/?v=20260807-mobile-guide-v5
+
+On iPhone, close the installed app completely and reopen it. If needed, open the link once in Safari first.
