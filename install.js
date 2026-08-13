@@ -79,258 +79,626 @@
 })();
 
 /* =========================================================
-   TUTORIAL GUIDE ANTI-BLOCK FIX
-   Auto moves Qaiyum figure away from highlighted content.
+   TUTORIAL STABLE LAYOUT V2
+   - Tutorial box avoids highlighted content
+   - Qaiyum figure NEVER disappears
+   - Stable dock: no jumping during scroll
    ========================================================= */
 (function () {
   'use strict';
 
+  const CLASS = 'tutorial-stable-v2';
+  const STYLE_ID = 'tutorial-stable-v2-style';
   const EDGE = 18;
-  const GAP = 22;
+  const GAP = 20;
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
+  let lastDialog = '';
+  let lastGuide = '';
+  let timer1 = null;
+  let timer2 = null;
 
-  function overlaps(a, b, gap = 0) {
-    if (!a || !b) return false;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-    return !(
-      a.right + gap <= b.left ||
-      a.left - gap >= b.right ||
-      a.bottom + gap <= b.top ||
-      a.top - gap >= b.bottom
-    );
-  }
+  function addStyle() {
+    if (document.getElementById(STYLE_ID)) return;
 
-  function visibleRect(el) {
-    if (!el) return null;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
 
-    const style = getComputedStyle(el);
+    style.textContent = `
+      @media (min-width:681px) {
 
-    if (
-      style.display === 'none' ||
-      style.visibility === 'hidden' ||
-      parseFloat(style.opacity || '1') === 0
-    ) {
-      return null;
-    }
+        .tutorial-layer.${CLASS} .tutorial-dialog {
+          left:var(--v2-dialog-left,18px)!important;
+          top:var(--v2-dialog-top,100px)!important;
+          right:auto!important;
+          bottom:auto!important;
 
-    const rect = el.getBoundingClientRect();
+          transition:
+            left .48s cubic-bezier(.2,.8,.2,1),
+            top .48s cubic-bezier(.2,.8,.2,1)!important;
 
-    if (rect.width < 5 || rect.height < 5) return null;
-
-    return rect;
-  }
-
-  function resetMobileGuide(guide) {
-    [
-      'left',
-      'top',
-      'right',
-      'bottom',
-      'width',
-      'height',
-      'visibility',
-      'opacity',
-      'transition'
-    ].forEach(prop => guide.style.removeProperty(prop));
-  }
-
-  function placeTutorialGuide() {
-    const layer = document.getElementById('tutorialLayer');
-    const guide = document.querySelector('.tutorial-guide-wrap');
-    const spotlight = document.getElementById('tutorialSpotlight');
-    const dialog = document.querySelector('.tutorial-dialog');
-
-    if (!layer || !guide || !spotlight) return;
-
-    if (!layer.classList.contains('show')) return;
-
-    /* Keep original mobile behaviour */
-    if (window.innerWidth <= 680) {
-      resetMobileGuide(guide);
-      return;
-    }
-
-    /* Language selection screen can keep original position */
-    if (layer.classList.contains('language-pick')) {
-      guide.style.removeProperty('visibility');
-      guide.style.removeProperty('opacity');
-      return;
-    }
-
-    const target = visibleRect(spotlight);
-
-    if (!target) return;
-
-    const dialogRect = visibleRect(dialog);
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    const topbar = document.querySelector('.topbar');
-    const safeTop = (topbar?.getBoundingClientRect().bottom || 0) + 12;
-
-    let width = clamp(vw * 0.19, 210, 300);
-    let height = clamp(vh * 0.62, 330, 560);
-
-    function buildCandidates(w, h) {
-      return [
-        /* Right of highlighted item */
-        {
-          left: target.right + GAP,
-          top: clamp(
-            target.top + target.height / 2 - h / 2,
-            safeTop,
-            vh - h - EDGE
-          ),
-          width: w,
-          height: h
-        },
-
-        /* Left of highlighted item */
-        {
-          left: target.left - GAP - w,
-          top: clamp(
-            target.top + target.height / 2 - h / 2,
-            safeTop,
-            vh - h - EDGE
-          ),
-          width: w,
-          height: h
-        },
-
-        /* Top-right */
-        {
-          left: vw - w - EDGE,
-          top: safeTop,
-          width: w,
-          height: h
-        },
-
-        /* Top-left */
-        {
-          left: EDGE,
-          top: safeTop,
-          width: w,
-          height: h
-        },
-
-        /* Bottom-right */
-        {
-          left: vw - w - EDGE,
-          top: vh - h - EDGE,
-          width: w,
-          height: h
-        },
-
-        /* Bottom-left */
-        {
-          left: EDGE,
-          top: vh - h - EDGE,
-          width: w,
-          height: h
+          transform:translate3d(0,0,0)!important;
+          will-change:left,top;
         }
-      ];
-    }
 
-    function validCandidate(c) {
-      if (
-        c.left < EDGE ||
-        c.top < safeTop ||
-        c.left + c.width > vw - EDGE ||
-        c.top + c.height > vh - EDGE
-      ) {
-        return false;
+        .tutorial-layer.${CLASS} .tutorial-guide-wrap {
+          left:var(--v2-guide-left,auto)!important;
+          top:var(--v2-guide-top,auto)!important;
+          right:auto!important;
+          bottom:auto!important;
+
+          width:var(--v2-guide-width,220px)!important;
+          height:var(--v2-guide-height,420px)!important;
+
+          visibility:visible!important;
+          opacity:1!important;
+
+          animation:none!important;
+
+          transition:
+            left .58s cubic-bezier(.2,.8,.2,1),
+            top .58s cubic-bezier(.2,.8,.2,1),
+            width .4s ease,
+            height .4s ease!important;
+
+          transform:translate3d(0,0,0)!important;
+          will-change:left,top;
+        }
+
+        .tutorial-layer.${CLASS} .tutorial-guide {
+          visibility:visible!important;
+          opacity:1!important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
+  function makeRect(c) {
+    return {
+      left:c.left,
+      top:c.top,
+      right:c.left + c.width,
+      bottom:c.top + c.height,
+      width:c.width,
+      height:c.height
+    };
+  }
+
+
+  function overlap(a,b,gap=0) {
+
+    const left = Math.max(a.left,b.left-gap);
+    const right = Math.min(a.right,b.right+gap);
+
+    const top = Math.max(a.top,b.top-gap);
+    const bottom = Math.min(a.bottom,b.bottom+gap);
+
+    if (right <= left || bottom <= top) return 0;
+
+    return (right-left)*(bottom-top);
+  }
+
+
+  function distance(a,b) {
+
+    const ax=(a.left+a.right)/2;
+    const ay=(a.top+a.bottom)/2;
+
+    const bx=(b.left+b.right)/2;
+    const by=(b.top+b.bottom)/2;
+
+    return Math.hypot(ax-bx,ay-by);
+  }
+
+
+  function corners(width,height,safeTop,vw,vh) {
+
+    const right = Math.max(
+      EDGE,
+      vw-width-EDGE
+    );
+
+    const bottom = Math.max(
+      safeTop,
+      vh-height-EDGE
+    );
+
+    return [
+
+      {
+        key:'TL',
+        left:EDGE,
+        top:safeTop,
+        width,
+        height
+      },
+
+      {
+        key:'TR',
+        left:right,
+        top:safeTop,
+        width,
+        height
+      },
+
+      {
+        key:'BL',
+        left:EDGE,
+        top:bottom,
+        width,
+        height
+      },
+
+      {
+        key:'BR',
+        left:right,
+        top:bottom,
+        width,
+        height
       }
 
-      const rect = {
-        left: c.left,
-        top: c.top,
-        right: c.left + c.width,
-        bottom: c.top + c.height
+    ];
+  }
+
+
+  function choose(candidates,target,avoid,last) {
+
+    const scored = candidates.map(c => {
+
+      const r=makeRect(c);
+
+      let obstruction =
+        overlap(r,target,GAP)*100;
+
+      avoid.forEach(x=>{
+        obstruction += overlap(r,x,14)*10;
+      });
+
+      return {
+        c,
+        r,
+        obstruction,
+        distance:distance(r,target)
       };
 
-      /* Never cover the thing currently being explained */
-      if (overlaps(rect, target, 18)) return false;
+    });
 
-      /* Also avoid tutorial text box */
-      if (dialogRect && overlaps(rect, dialogRect, 10)) return false;
 
-      return true;
+    /* Keep same corner if it is still safe.
+       This prevents jumping between every step. */
+
+    const old = scored.find(x=>x.c.key===last);
+
+    if(old && old.obstruction===0){
+      return old.c;
     }
 
-    let candidate = buildCandidates(width, height).find(validCandidate);
 
-    /* Try smaller character if space is tight */
-    if (!candidate) {
-      width *= 0.78;
-      height *= 0.78;
+    const clear = scored
+      .filter(x=>x.obstruction===0)
+      .sort((a,b)=>b.distance-a.distance);
 
-      candidate = buildCandidates(width, height).find(validCandidate);
+    if(clear.length){
+      return clear[0].c;
     }
 
-    /* If there is genuinely no safe space, hide figure for this step.
-       Spotlight + tutorial explanation remain visible. */
-    if (!candidate) {
-      guide.style.visibility = 'hidden';
-      guide.style.opacity = '0';
+
+    /* If all corners are tight, choose the one covering
+       the smallest amount instead of hiding anything. */
+
+    scored.sort((a,b)=>{
+
+      if(a.obstruction!==b.obstruction){
+        return a.obstruction-b.obstruction;
+      }
+
+      return b.distance-a.distance;
+
+    });
+
+    return scored[0].c;
+  }
+
+
+  function layoutTutorial() {
+
+    const layer =
+      document.getElementById('tutorialLayer');
+
+    const spotlight =
+      document.getElementById('tutorialSpotlight');
+
+    const dialog =
+      document.querySelector('.tutorial-dialog');
+
+    const guide =
+      document.querySelector('.tutorial-guide-wrap');
+
+
+    if(!layer || !spotlight || !dialog || !guide){
       return;
     }
 
-    guide.style.visibility = 'visible';
-    guide.style.opacity = '1';
 
-    guide.style.right = 'auto';
-    guide.style.bottom = 'auto';
+    /* Keep original mobile design */
 
-    guide.style.left = Math.round(candidate.left) + 'px';
-    guide.style.top = Math.round(candidate.top) + 'px';
-    guide.style.width = Math.round(candidate.width) + 'px';
-    guide.style.height = Math.round(candidate.height) + 'px';
+    if(
+      innerWidth<=680 ||
+      !layer.classList.contains('show') ||
+      layer.classList.contains('language-pick')
+    ){
 
-    guide.style.transition =
-      'left .28s ease, top .28s ease, width .28s ease, height .28s ease, opacity .2s ease';
-  }
-
-  let scheduled = false;
-
-  function scheduleGuidePosition() {
-    if (scheduled) return;
-
-    scheduled = true;
-
-    requestAnimationFrame(() => {
-      scheduled = false;
-      placeTutorialGuide();
-    });
-  }
-
-  window.addEventListener('resize', scheduleGuidePosition);
-  window.addEventListener('scroll', scheduleGuidePosition, true);
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const layer = document.getElementById('tutorialLayer');
-    const spotlight = document.getElementById('tutorialSpotlight');
-
-    if (layer) {
-      new MutationObserver(scheduleGuidePosition).observe(layer, {
-        attributes: true,
-        attributeFilter: ['class']
-      });
+      layer.classList.remove(CLASS);
+      return;
     }
 
-    if (spotlight) {
-      new MutationObserver(scheduleGuidePosition).observe(spotlight, {
-        attributes: true,
-        attributeFilter: ['style']
-      });
+
+    addStyle();
+
+    layer.classList.add(CLASS);
+
+
+    const t=spotlight.getBoundingClientRect();
+
+    if(t.width<10 || t.height<10){
+      return;
     }
 
-    document.addEventListener('click', () => {
-      setTimeout(scheduleGuidePosition, 80);
-      setTimeout(scheduleGuidePosition, 350);
-    });
-  });
+
+    const target={
+
+      left:t.left,
+      top:t.top,
+
+      right:t.right,
+      bottom:t.bottom,
+
+      width:t.width,
+      height:t.height
+
+    };
+
+
+    const vw=innerWidth;
+    const vh=innerHeight;
+
+
+    const topbar =
+      document.querySelector('.topbar');
+
+    const safeTop =
+      Math.max(
+        EDGE,
+        (topbar?.getBoundingClientRect().bottom || 0)+14
+      );
+
+
+    /* =================================
+       TUTORIAL TEXT BOX
+       ================================= */
+
+
+    const currentDialog =
+      dialog.getBoundingClientRect();
+
+
+    const dw =
+      Math.min(
+        currentDialog.width || 560,
+        vw-(EDGE*2)
+      );
+
+
+    const dh =
+      Math.min(
+        currentDialog.height || 260,
+        vh-safeTop-EDGE
+      );
+
+
+    const dialogOptions =
+      corners(
+        dw,
+        dh,
+        safeTop,
+        vw,
+        vh
+      );
+
+
+    const dialogDock =
+      choose(
+        dialogOptions,
+        target,
+        [],
+        lastDialog
+      );
+
+
+    lastDialog =
+      dialogDock.key;
+
+
+    layer.style.setProperty(
+      '--v2-dialog-left',
+      Math.round(dialogDock.left)+'px'
+    );
+
+
+    layer.style.setProperty(
+      '--v2-dialog-top',
+      Math.round(dialogDock.top)+'px'
+    );
+
+
+    const dialogRect =
+      makeRect(dialogDock);
+
+
+    /* =================================
+       QAIYUM FIGURE
+       ================================= */
+
+
+    let gw =
+      clamp(
+        vw*.17,
+        170,
+        260
+      );
+
+
+    let gh =
+      clamp(
+        vh*.46,
+        310,
+        500
+      );
+
+
+    let guideOptions =
+      corners(
+        gw,
+        gh,
+        safeTop,
+        vw,
+        vh
+      );
+
+
+    let guideDock =
+      choose(
+        guideOptions,
+        target,
+        [dialogRect],
+        lastGuide
+      );
+
+
+    let guideRect =
+      makeRect(guideDock);
+
+
+    /* If space is tight,
+       shrink the figure slightly.
+       NEVER hide it. */
+
+    const figureArea =
+      guideRect.width *
+      guideRect.height;
+
+
+    const badOverlap =
+      overlap(
+        guideRect,
+        target,
+        GAP
+      );
+
+
+    const dialogOverlap =
+      overlap(
+        guideRect,
+        dialogRect,
+        14
+      );
+
+
+    if(
+      badOverlap > figureArea*.08 ||
+      dialogOverlap > figureArea*.08
+    ){
+
+      gw =
+        clamp(
+          gw*.78,
+          145,
+          210
+        );
+
+
+      gh =
+        clamp(
+          gh*.78,
+          260,
+          390
+        );
+
+
+      guideOptions =
+        corners(
+          gw,
+          gh,
+          safeTop,
+          vw,
+          vh
+        );
+
+
+      guideDock =
+        choose(
+          guideOptions,
+          target,
+          [dialogRect],
+          lastGuide
+        );
+
+    }
+
+
+    lastGuide =
+      guideDock.key;
+
+
+    layer.style.setProperty(
+      '--v2-guide-left',
+      Math.round(guideDock.left)+'px'
+    );
+
+
+    layer.style.setProperty(
+      '--v2-guide-top',
+      Math.round(guideDock.top)+'px'
+    );
+
+
+    layer.style.setProperty(
+      '--v2-guide-width',
+      Math.round(guideDock.width)+'px'
+    );
+
+
+    layer.style.setProperty(
+      '--v2-guide-height',
+      Math.round(guideDock.height)+'px'
+    );
+
+  }
+
+
+  function scheduleLayout(){
+
+    clearTimeout(timer1);
+    clearTimeout(timer2);
+
+
+    /*
+      Don't recalculate continuously while page is scrolling.
+      Wait for target movement to settle.
+    */
+
+    timer1=setTimeout(
+      layoutTutorial,
+      140
+    );
+
+
+    timer2=setTimeout(
+      layoutTutorial,
+      560
+    );
+
+  }
+
+
+  function start(){
+
+    addStyle();
+
+
+    const layer =
+      document.getElementById('tutorialLayer');
+
+
+    const spotlight =
+      document.getElementById('tutorialSpotlight');
+
+
+    if(!layer || !spotlight){
+      return;
+    }
+
+
+    new MutationObserver(
+      scheduleLayout
+    ).observe(
+      layer,
+      {
+        attributes:true,
+        attributeFilter:['class']
+      }
+    );
+
+
+    new MutationObserver(
+      scheduleLayout
+    ).observe(
+      spotlight,
+      {
+        attributes:true,
+        attributeFilter:['style']
+      }
+    );
+
+
+    spotlight.addEventListener(
+      'transitionend',
+      scheduleLayout
+    );
+
+
+    window.addEventListener(
+      'resize',
+      scheduleLayout
+    );
+
+
+    /*
+      IMPORTANT:
+      No continuous scroll listener here.
+      This is what stops the jumping.
+    */
+
+
+    document.addEventListener(
+      'click',
+      function(e){
+
+        if(
+          e.target.closest(
+            '.tutorial-action,'+
+            '.module-guide-btn,'+
+            '.guide-launch,'+
+            '.language-option'
+          )
+        ){
+          scheduleLayout();
+        }
+
+      }
+    );
+
+
+    scheduleLayout();
+
+  }
+
+
+  if(document.readyState==='loading'){
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      start
+    );
+
+  }else{
+
+    start();
+
+  }
+
 })();
