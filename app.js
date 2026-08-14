@@ -1263,7 +1263,146 @@
   function csvEscape(v){const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
   function downloadCSV(filename,headers,rows){const csv=[headers.join(','),...rows.map(r=>r.map(csvEscape).join(','))].join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href);}
   function exportReceiving(records=receivingRecords){downloadCSV(`warehouse_receiving_${safeFilePart(workspaceName())}.csv`,['Record ID','Shipment Date','Booking Slot','DO Number','PO Number','Customer','Vehicle Number','Transport Type','Expected Qty','Actual Qty','Variance','Staff','Arrival Time','Receiving Start Time','Completion Time','Total Duration','Status','Remarks'],records.map(r=>[r.id,r.shipmentDate,r.bookingSlot||'',r.doNumber,r.poNumber,r.customer,r.vehicleNumber,r.transportType,r.expectedQty,r.actualQty,variance(r.expectedQty,r.actualQty),r.staffName,fmtDateTime(r.arrivalTime),fmtDateTime(r.startTime),fmtDateTime(r.completionTime),r.completionTime?formatDuration(durationMs(r)):'',baseStatus(r),r.remarks]));}
-  function exportDiscrepancies(){const rows=workspaceDiscrepancyRecords();downloadCSV(`warehouse_discrepancy_${safeFilePart(workspaceName())}.csv`,['Report ID','Report Date','DO Number','PO Number','Customer','SKU','Product Name','Expected Qty','Actual Qty','Variance','Issue Type','Item Condition','Action Taken','PIC','Status','Remarks'],rows.map(d=>[d.id,d.reportDate,d.doNumber,d.poNumber,d.customer,d.sku,d.productName,d.expectedQty,d.actualQty,variance(d.expectedQty,d.actualQty),d.issueType,d.itemCondition,d.actionTaken,d.pic,d.resolved?'Resolved':'Unresolved',d.remarks]));}
+  async function exportDiscrepancies() {
+  const rows = workspaceDiscrepancyRecords();
+
+  if (typeof ExcelJS === 'undefined') {
+    toast('Excel export library is not loaded. Please refresh the page.', 'warning');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Discrepancy Report');
+
+  worksheet.columns = [
+    { header: 'Report ID', key: 'id', width: 20 },
+    { header: 'Report Date', key: 'reportDate', width: 14 },
+    { header: 'DO Number', key: 'doNumber', width: 18 },
+    { header: 'PO Number', key: 'poNumber', width: 18 },
+    { header: 'Customer', key: 'customer', width: 20 },
+    { header: 'SKU', key: 'sku', width: 18 },
+    { header: 'Product Name', key: 'productName', width: 24 },
+    { header: 'Expected Qty', key: 'expectedQty', width: 14 },
+    { header: 'Actual Qty', key: 'actualQty', width: 14 },
+    { header: 'Variance', key: 'variance', width: 12 },
+    { header: 'Issue Type', key: 'issueType', width: 20 },
+    { header: 'Item Condition', key: 'itemCondition', width: 18 },
+    { header: 'Action Taken', key: 'actionTaken', width: 22 },
+    { header: 'PIC', key: 'pic', width: 18 },
+    { header: 'Status', key: 'status', width: 15 },
+    { header: 'Remarks', key: 'remarks', width: 30 },
+    { header: 'Photo', key: 'photo', width: 18 }
+  ];
+
+  const headerRow = worksheet.getRow(1);
+
+  headerRow.font = {
+    bold: true
+  };
+
+  headerRow.alignment = {
+    vertical: 'middle',
+    horizontal: 'center'
+  };
+
+  headerRow.height = 24;
+
+  rows.forEach(d => {
+    const row = worksheet.addRow({
+      id: d.id,
+      reportDate: d.reportDate,
+      doNumber: d.doNumber,
+      poNumber: d.poNumber,
+      customer: d.customer,
+      sku: d.sku,
+      productName: d.productName,
+      expectedQty: d.expectedQty,
+      actualQty: d.actualQty,
+      variance: variance(d.expectedQty, d.actualQty),
+      issueType: d.issueType,
+      itemCondition: d.itemCondition,
+      actionTaken: d.actionTaken,
+      pic: d.pic,
+      status: d.resolved ? 'Resolved' : 'Unresolved',
+      remarks: d.remarks || '',
+      photo: ''
+    });
+
+    if (d.photo && d.photo.startsWith('data:image/')) {
+      try {
+        const match = d.photo.match(
+          /^data:image\/(png|jpe?g);base64,(.+)$/i
+        );
+
+        if (match) {
+          const extension =
+            match[1].toLowerCase() === 'png'
+              ? 'png'
+              : 'jpeg';
+
+          const imageId = workbook.addImage({
+            base64: d.photo,
+            extension: extension
+          });
+
+          worksheet.addImage(imageId, {
+            tl: {
+              col: 16.15,
+              row: row.number - 1 + 0.12
+            },
+            ext: {
+              width: 100,
+              height: 75
+            }
+          });
+
+          row.height = 62;
+        }
+      } catch (error) {
+        console.warn('Photo export failed:', error);
+      }
+    }
+
+    row.alignment = {
+      vertical: 'middle'
+    };
+  });
+
+  worksheet.views = [
+    {
+      state: 'frozen',
+      ySplit: 1
+    }
+  ];
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  const blob = new Blob(
+    [buffer],
+    {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+
+  a.href = url;
+
+  a.download =
+    `warehouse_discrepancy_${safeFilePart(workspaceName())}.xlsx`;
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
   function refreshDatalists(){
     $('customerList').innerHTML=COMPANIES.map(x=>`<option value="${esc(x)}">`).join('');
     const staff=[...new Set(receivingRecords.map(r=>r.staffName).filter(Boolean))].sort();$('staffList').innerHTML=staff.map(x=>`<option value="${esc(x)}">`).join('');
