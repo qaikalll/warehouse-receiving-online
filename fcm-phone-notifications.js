@@ -373,6 +373,72 @@
     return true;
   }
 
+
+  function getPushDeepLink(){
+    try{
+      const params=new URLSearchParams(window.location.search);
+      if(params.get('open')!=='booking')return null;
+      return {
+        bookingId:params.get('booking')||'',
+        doNumber:params.get('do')||'',
+        shipmentDate:params.get('date')||'',
+        customer:params.get('customer')||''
+      };
+    }catch(e){
+      return null;
+    }
+  }
+
+  function clearPushDeepLink(){
+    try{
+      const url=new URL(window.location.href);
+      ['open','booking','do','date','customer'].forEach(key=>url.searchParams.delete(key));
+      history.replaceState({},document.title,url.pathname+(url.search||'')+(url.hash||''));
+    }catch(e){}
+  }
+
+  function openBookingFromPush(){
+    const link=getPushDeepLink();
+    if(!link||!currentUser)return false;
+
+    const receivingNav=document.querySelector('.nav-btn[data-section="receiving"]');
+    if(!receivingNav)return false;
+
+    receivingNav.click();
+
+    setTimeout(()=>{
+      const doF=document.getElementById('recFilterDO');
+      const dateF=document.getElementById('recFilterDate');
+      const custF=document.getElementById('recFilterCustomer');
+
+      if(doF&&link.doNumber){
+        doF.value=link.doNumber;
+        doF.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      if(dateF&&link.shipmentDate){
+        dateF.value=link.shipmentDate;
+        dateF.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      if(custF&&link.customer){
+        custF.value=link.customer;
+        custF.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+
+      clearPushDeepLink();
+    },250);
+
+    return true;
+  }
+
+  function schedulePushDeepLink(){
+    if(!getPushDeepLink())return;
+    let tries=0;
+    const timer=setInterval(()=>{
+      tries++;
+      if(openBookingFromPush()||tries>=30)clearInterval(timer);
+    },250);
+  }
+
   function watchUI(){
     mountButtons();
     mountAutoBookingTrigger();
@@ -395,6 +461,9 @@
       updateButtons();
       if(currentUser&&currentToken){
         syncSavedTokenProfile(currentUser);
+      }
+      if(currentUser){
+        schedulePushDeepLink();
       }
     });
 
