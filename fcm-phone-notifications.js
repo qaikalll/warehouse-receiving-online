@@ -6,6 +6,7 @@
   const TOKEN_KEY='wrs_fcm_token_v2';
   const OLD_TOKEN_KEY='wrs_fcm_token_v1';
   const PUSH_APP_NAME='wrs-push-v12';
+  const AUTO_PUSH_WORKER_URL='https://warehouse-booking-push.ednvines.workers.dev/notify-booking';
 
   const FIREBASE_CONFIG={
     apiKey:'AIzaSyAGDRTLXWaCWZpNdqA8KIBoUYJWBEq8qFM',
@@ -26,6 +27,7 @@
   let currentToken='';
   let messaging=null;
   let messagingApi=null;
+  let autoPushWatching=false;
 
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -69,44 +71,78 @@
     return messaging;
   }
 
-  async function getProfileName(user){
-    let name=user?.displayName||'';
+  async function getProfileData(user){
+    const profile={displayName:user?.displayName||'',role:'',companyId:'',companyName:'',active:true};
     try{
       const db=firebase.firestore();
       const direct=await db.collection('users').doc(user.uid).get();
       if(direct.exists){
         const data=direct.data()||{};
-        name=data.displayName||data.name||name;
+        profile.displayName=data.displayName||data.name||profile.displayName;
+        profile.role=data.role||profile.role;
+        profile.companyId=data.companyId||profile.companyId;
+        profile.companyName=data.companyName||profile.companyName;
+        if(typeof data.active==='boolean')profile.active=data.active;
       }
-      if(!name&&user.email){
-        const q=await db.collection('users').where('email','==',user.email).limit(1).get();
-        if(!q.empty){
-          const data=q.docs[0].data()||{};
-          name=data.displayName||data.name||name;
-        }
+      if(user.email && (!profile.role || !profile.displayName)){
+        const q=await db.collection('users').where('email','==',user.email).limit(5).get();
+        q.docs.forEach(doc=>{
+          const data=doc.data()||{};
+          if(!profile.displayName)profile.displayName=data.displayName||data.name||'';
+          if(!profile.role)profile.role=data.role||'';
+          if(!profile.companyId)profile.companyId=data.companyId||'';
+          if(!profile.companyName)profile.companyName=data.companyName||'';
+          if(typeof data.active==='boolean')profile.active=data.active;
+        });
       }
     }catch(e){}
-    if(!name)name=String(user?.email||'User').split('@')[0];
-    return name;
+
+    const email=String(user?.email||'').toLowerCase();
+    if(!profile.role && email==='ednvines@gmail.com')profile.role='admin';
+    if(!profile.role && email==='staff@warehouse-client.com')profile.role='staff';
+    if(!profile.displayName)profile.displayName=String(user?.email||'User').split('@')[0];
+    return profile;
+  }
+
+  async function getProfileName(user){
+    const profile=await getProfileData(user);
+    return profile.displayName||'User';
   }
 
   async function saveToken(user,token,name){
     try{
       const db=firebase.firestore();
       const FieldValue=firebase.firestore.FieldValue;
-      await db.collection('users').doc(user.uid).set({
+      const profile=await getProfileData(user);
+      const payload={
         email:user.email||'',
-        displayName:name||user.displayName||'',
+        displayName:name||profile.displayName||user.displayName||'',
         pushNotificationsEnabled:true,
         fcmTokens:FieldValue.arrayUnion(token),
         fcmSdk:SDK_VERSION,
         pushTransport:'fcm-web-v12-native-sw',
         lastPushRegisteredAt:new Date().toISOString()
-      },{merge:true});
+      };
+      if(profile.role)payload.role=profile.role;
+      if(profile.companyId)payload.companyId=profile.companyId;
+      if(profile.companyName)payload.companyName=profile.companyName;
+      if(typeof profile.active==='boolean')payload.active=profile.active;
+      await db.collection('users').doc(user.uid).set(payload,{merge:true});
       return true;
     }catch(e){
       console.warn('Push token created but Firestore save was blocked.',e);
       return false;
+    }
+  }
+
+  async function syncSavedTokenProfile(user){
+    const token=localStorage.getItem(TOKEN_KEY)||'';
+    if(!user||!token)return;
+    try{
+      const name=await getProfileName(user);
+      await saveToken(user,token,name);
+    }catch(e){
+      console.warn('Existing push token profile sync skipped.',e);
     }
   }
 
@@ -254,9 +290,79 @@
     return true;
   }
 
+  async function notifyWorkerForBooking(bookingId,user){
+    if(!bookingId||!user)return false;
+    const idToken=await user.getIdToken();
+    const res=await fetch(AUTO_PUSH_WORKER_URL,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${idToken}`
+      },
+      body:JSON.stringify({bookingId})
+    });
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok && !data.duplicate){
+      throw new Error(data.message||data.error||`Push Worker returned ${res.status}`);
+    }
+    console.info('Automatic booking push result',data);
+    return true;
+  }
+
+  async function findAndNotifyFreshBooking(clickedAt,user){
+    if(autoPushWatching||!user?.email)return;
+    autoPushWatching=true;
+    try{
+      const db=firebase.firestore();
+      for(let attempt=0;attempt<20;attempt++){
+        await sleep(attempt===0?900:700);
+        const snap=await db.collection('receivings').where('bookedBy','==',user.email).get();
+        const candidates=snap.docs.map(doc=>({id:doc.id,...(doc.data()||{})}))
+          .filter(r=>r.source==='client-booking')
+          .filter(r=>{
+            const t=Date.parse(r.bookingCreatedAt||r.createdAt||'');
+            return Number.isFinite(t)&&t>=clickedAt-3000;
+          })
+          .sort((a,b)=>Date.parse(b.bookingCreatedAt||b.createdAt||0)-Date.parse(a.bookingCreatedAt||a.createdAt||0));
+
+        if(candidates.length){
+          const fresh=candidates[0];
+          try{
+            await notifyWorkerForBooking(fresh.id,user);
+          }catch(err){
+            console.error('Automatic booking push failed',err);
+          }
+          return;
+        }
+      }
+      console.warn('Automatic booking push: no fresh booking found after submit click.');
+    }catch(err){
+      console.error('Automatic booking push watcher failed',err);
+    }finally{
+      autoPushWatching=false;
+    }
+  }
+
+  function mountAutoBookingTrigger(){
+    const btn=document.getElementById('submitBookingBtn');
+    if(!btn||btn.dataset.autoPushBound==='1')return false;
+    btn.dataset.autoPushBound='1';
+    btn.addEventListener('click',()=>{
+      const user=firebase.auth().currentUser;
+      if(!user)return;
+      const clickedAt=Date.now();
+      setTimeout(()=>findAndNotifyFreshBooking(clickedAt,user),0);
+    });
+    return true;
+  }
+
   function watchUI(){
     mountButtons();
-    const observer=new MutationObserver(()=>mountButtons());
+    mountAutoBookingTrigger();
+    const observer=new MutationObserver(()=>{
+      mountButtons();
+      mountAutoBookingTrigger();
+    });
     observer.observe(document.documentElement,{childList:true,subtree:true});
   }
 
@@ -270,6 +376,9 @@
       currentUser=user||null;
       currentToken=localStorage.getItem(TOKEN_KEY)||'';
       updateButtons();
+      if(currentUser&&currentToken){
+        syncSavedTokenProfile(currentUser);
+      }
     });
 
     if(document.readyState==='loading'){
