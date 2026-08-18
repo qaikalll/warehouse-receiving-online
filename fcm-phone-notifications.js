@@ -1,8 +1,22 @@
 (function(){
   'use strict';
 
+  const SDK_VERSION='12.16.0';
   const VAPID_KEY='BNKnkzejs16j77C44Mgt9R3ifmJC_MKeiLi-Qt4xrY6xLl3OZkcUHeDaoUca_khXZPqB0gi79TH69XskLBB3y4c';
-  const TOKEN_KEY='wrs_fcm_token_v1';
+  const TOKEN_KEY='wrs_fcm_token_v2';
+  const OLD_TOKEN_KEY='wrs_fcm_token_v1';
+  const PUSH_APP_NAME='wrs-push-v12';
+
+  const FIREBASE_CONFIG={
+    apiKey:'AIzaSyAGDRTLXWaCWZpNdqA8KIBoUYJWBEq8qFM',
+    authDomain:'warehouse-receiving-online.firebaseapp.com',
+    projectId:'warehouse-receiving-online',
+    storageBucket:'warehouse-receiving-online.firebasestorage.app',
+    messagingSenderId:'655223366420',
+    appId:'1:655223366420:web:7437455a7908e31e521801',
+    measurementId:'G-FV5D6TBVR1'
+  };
+
   const BTN_ID='bookingPhonePushBtn';
   const RESET_ID='bookingPhonePushResetBtn';
   const LOCAL_ID='bookingPhonePushLocalTestBtn';
@@ -11,6 +25,7 @@
   let currentUser=null;
   let currentToken='';
   let messaging=null;
+  let messagingApi=null;
 
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -32,33 +47,25 @@
     alert(title+(body?'\n\n'+body:''));
   }
 
-  function loadScript(src){
-    return new Promise((resolve,reject)=>{
-      const existing=[...document.scripts].find(s=>s.src===src);
-      if(existing){
-        if(window.firebase?.messaging)return resolve();
-        existing.addEventListener('load',resolve,{once:true});
-        existing.addEventListener('error',reject,{once:true});
-        return;
-      }
-      const s=document.createElement('script');
-      s.src=src;
-      s.onload=resolve;
-      s.onerror=reject;
-      document.head.appendChild(s);
-    });
-  }
-
   async function ensureMessaging(){
-    if(!window.firebase)throw new Error('Firebase is not ready yet.');
-    if(!firebase.messaging){
-      await loadScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js');
-    }
-    if(firebase.messaging.isSupported){
-      const supported=await firebase.messaging.isSupported();
-      if(!supported)throw new Error('Firebase web push is not supported on this browser/device.');
-    }
-    messaging=firebase.messaging();
+    if(messaging && messagingApi) return messaging;
+
+    const appUrl=`https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-app.js`;
+    const msgUrl=`https://www.gstatic.com/firebasejs/${SDK_VERSION}/firebase-messaging.js`;
+
+    const [appApi,msgApi]=await Promise.all([
+      import(appUrl),
+      import(msgUrl)
+    ]);
+
+    const supported=await msgApi.isSupported();
+    if(!supported) throw new Error('Firebase web push is not supported on this browser/device.');
+
+    let pushApp=appApi.getApps().find(app=>app.name===PUSH_APP_NAME);
+    if(!pushApp) pushApp=appApi.initializeApp(FIREBASE_CONFIG,PUSH_APP_NAME);
+
+    messaging=msgApi.getMessaging(pushApp);
+    messagingApi=msgApi;
     return messaging;
   }
 
@@ -92,11 +99,13 @@
         displayName:name||user.displayName||'',
         pushNotificationsEnabled:true,
         fcmTokens:FieldValue.arrayUnion(token),
+        fcmSdk:SDK_VERSION,
+        pushTransport:'fcm-web-v12-native-sw',
         lastPushRegisteredAt:new Date().toISOString()
       },{merge:true});
       return true;
     }catch(e){
-      console.warn('FCM token generated but Firestore save was blocked.',e);
+      console.warn('Push token created but Firestore save was blocked.',e);
       return false;
     }
   }
@@ -124,21 +133,21 @@
     try{
       await ensurePermission();
       const reg=await getReadyRegistration();
-      const name=currentUser?await getProfileName(currentUser):'Qaiyum';
+      const name=currentUser?await getProfileName(currentUser):'User';
       await reg.showNotification(`Hi ${name}, local test works ✅`,{
-        body:'This test comes directly from the installed Warehouse Receiving app.',
+        body:'Native service-worker notification is working.',
         icon:'./apple-touch-icon.png',
         badge:'./apple-touch-icon.png',
         tag:'wrs-local-native-test-'+Date.now()
       });
-      toast('Local test sent','Lock the iPhone and check Notification Center.');
+      toast('Local test sent','The phone notification system is working.');
     }catch(err){
       console.error(err);
       toast('Local Test Failed',err?.message||String(err));
     }
   }
 
-  async function enablePhonePush({reset=false}={}){
+  async function registerPush({reset=false}={}){
     const btn=document.getElementById(reset?RESET_ID:BTN_ID);
     if(btn)btn.disabled=true;
 
@@ -146,21 +155,17 @@
       if(!currentUser)throw new Error('Please login first.');
       await ensurePermission();
       await ensureMessaging();
-
       const reg=await getReadyRegistration();
 
       if(reset){
-        try{
-          await messaging.deleteToken();
-        }catch(e){
-          console.warn('deleteToken warning',e);
-        }
+        try{ await messagingApi.deleteToken(messaging); }catch(e){ console.warn('deleteToken warning',e); }
         localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(OLD_TOKEN_KEY);
         currentToken='';
         await sleep(1200);
       }
 
-      const token=await messaging.getToken({
+      const token=await messagingApi.getToken(messaging,{
         vapidKey:VAPID_KEY,
         serviceWorkerRegistration:reg
       });
@@ -169,14 +174,15 @@
 
       currentToken=token;
       localStorage.setItem(TOKEN_KEY,token);
+      localStorage.removeItem(OLD_TOKEN_KEY);
 
       const name=await getProfileName(currentUser);
       const saved=await saveToken(currentUser,token,name);
 
       updateButtons();
       toast(
-        reset?'Fresh FCM Token Created':'Phone Push Enabled',
-        `Hi ${name}. ${reset?'A fresh iPhone push token was created.':'This phone is registered.'}${saved?'':' Token saving to the account was blocked, but testing can continue.'}`
+        reset?'Fresh FCM v12 Token Created':'Phone Push Registered',
+        `Hi ${name}. Firebase Messaging ${SDK_VERSION} is registered.${saved?'':' Account token save was blocked, but console testing can continue.'}`
       );
     }catch(err){
       console.error(err);
@@ -189,12 +195,12 @@
   async function copyToken(){
     const token=currentToken||localStorage.getItem(TOKEN_KEY)||'';
     if(!token){
-      toast('No FCM Token','Enable or Reset Phone Push first.');
+      toast('No Fresh Token','Press Reset iPhone Push first.');
       return;
     }
     try{
       await navigator.clipboard.writeText(token);
-      toast('Fresh FCM Token Copied','Paste this token into Firebase Console → Send test message.');
+      toast('Fresh FCM v12 Token Copied','Paste this token into Firebase Console → Send test message.');
     }catch(e){
       prompt('Copy this FCM test token:',token);
     }
@@ -208,12 +214,12 @@
 
     const saved=localStorage.getItem(TOKEN_KEY)||'';
     if(Notification.permission==='granted'&&saved){
-      btn.textContent='Phone Push On';
+      btn.textContent='Phone Push On (v12)';
       if(reset)reset.style.display='';
       if(copy)copy.style.display='';
     }else{
-      btn.textContent='Enable Phone Push';
-      if(reset)reset.style.display='none';
+      btn.textContent='Enable Phone Push v12';
+      if(reset)reset.style.display='';
       if(copy)copy.style.display='none';
     }
   }
@@ -233,11 +239,10 @@
     if(!actions||document.getElementById(BTN_ID))return false;
 
     const local=makeBtn(LOCAL_ID,'Test Phone Alert',localNativeTest);
-    const enable=makeBtn(BTN_ID,'Enable Phone Push',()=>enablePhonePush({reset:false}));
-    const reset=makeBtn(RESET_ID,'Reset iPhone Push',()=>enablePhonePush({reset:true}));
+    const enable=makeBtn(BTN_ID,'Enable Phone Push v12',()=>registerPush({reset:false}));
+    const reset=makeBtn(RESET_ID,'Reset iPhone Push',()=>registerPush({reset:true}));
     const copy=makeBtn(COPY_ID,'Copy Fresh Token',copyToken);
 
-    reset.style.display='none';
     copy.style.display='none';
 
     actions.insertBefore(local,actions.firstChild);
