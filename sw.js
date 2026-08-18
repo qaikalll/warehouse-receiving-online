@@ -12,28 +12,44 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
+const IS_IOS = /iphone|ipad|ipod/i.test(self.navigator?.userAgent || '');
 
 /*
-  Notification messages sent by Firebase Console are displayed automatically
-  by Firebase Messaging while the app is in the background.
-  This handler is for future data-only booking pushes.
+  IMPORTANT:
+  Firebase Console test messages contain a notification payload.
+  Chrome/Android normally displays those automatically.
+  On iPhone Home Screen web apps, we explicitly display the notification
+  when the background message callback fires so WebKit receives a visible
+  notification immediately.
 */
 messaging.onBackgroundMessage(payload => {
-  if (payload?.notification?.title || payload?.notification?.body) return;
-
+  const notification = payload?.notification || {};
   const data = payload?.data || {};
-  const title = data.title || 'Warehouse Receiving';
-  const body = data.body || 'You have a new warehouse update.';
 
-  return self.registration.showNotification(title, {
+  // Non-iOS browsers can rely on Firebase automatic display for notification payloads.
+  if (!IS_IOS && (notification.title || notification.body)) return;
+
+  const title =
+    notification.title ||
+    data.title ||
+    'Warehouse Receiving';
+
+  const body =
+    notification.body ||
+    data.body ||
+    'You have a new warehouse update.';
+
+  const options = {
     body,
-    icon: './icon.svg',
-    badge: './icon.svg',
+    icon: notification.icon || data.icon || './apple-touch-icon.png',
+    badge: './apple-touch-icon.png',
     tag: data.tag || 'wrs-push',
     data: {
       url: data.url || './'
     }
-  });
+  };
+
+  return self.registration.showNotification(title, options);
 });
 
 self.addEventListener('notificationclick', event => {
@@ -53,7 +69,7 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-const CACHE='wrs-20260818-fcm-v1';
+const CACHE='wrs-20260818-fcm-ios-v2';
 const CORE=[
   './',
   './app.css?v=20260807-full-app-i18n-v6-4',
@@ -62,7 +78,8 @@ const CORE=[
   './install.js?v=20260807-full-app-i18n-v6-4',
   './app-i18n.js?v=20260807-full-app-i18n-v6-4',
   './manifest.webmanifest?v=20260807-full-app-i18n-v6-4',
-  './icon.svg'
+  './icon.svg',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install',event=>{
