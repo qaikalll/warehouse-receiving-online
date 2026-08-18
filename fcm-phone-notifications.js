@@ -314,11 +314,28 @@
     autoPushWatching=true;
     try{
       const db=firebase.firestore();
+      const profile=await getProfileData(user);
+      const companyId=String(profile.companyId||'').trim();
+
+      if(!companyId){
+        console.error('Automatic booking push: client companyId is missing.');
+        return;
+      }
+
       for(let attempt=0;attempt<20;attempt++){
         await sleep(attempt===0?900:700);
-        const snap=await db.collection('receivings').where('bookedBy','==',user.email).get();
+
+        // IMPORTANT:
+        // Client Firestore access in the main app is scoped by companyId.
+        // Use the same allowed query here, then filter bookedBy locally.
+        const snap=await db.collection('receivings')
+          .where('companyId','==',companyId)
+          .get();
+
+        const callerEmail=String(user.email||'').toLowerCase();
         const candidates=snap.docs.map(doc=>({id:doc.id,...(doc.data()||{})}))
           .filter(r=>r.source==='client-booking')
+          .filter(r=>String(r.bookedBy||'').toLowerCase()===callerEmail)
           .filter(r=>{
             const t=Date.parse(r.bookingCreatedAt||r.createdAt||'');
             return Number.isFinite(t)&&t>=clickedAt-3000;
