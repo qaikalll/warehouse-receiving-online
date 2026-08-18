@@ -4,6 +4,8 @@
   const VAPID_KEY='BNKnkzejs16j77C44Mgt9R3ifmJC_MKeiLi-Qt4xrY6xLl3OZkcUHeDaoUca_khXZPqB0gi79TH69XskLBB3y4c';
   const TOKEN_KEY='wrs_fcm_token_v1';
   const BTN_ID='bookingPhonePushBtn';
+  const RESET_ID='bookingPhonePushResetBtn';
+  const LOCAL_ID='bookingPhonePushLocalTestBtn';
   const COPY_ID='bookingPhonePushCopyBtn';
 
   let currentUser=null;
@@ -12,6 +14,7 @@
 
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
   function toast(title,body){
     const stack=document.getElementById('bookingToastStack');
@@ -23,7 +26,7 @@
       div.querySelector('span').textContent=body||'';
       div.querySelector('button').addEventListener('click',()=>div.remove());
       stack.appendChild(div);
-      setTimeout(()=>div.remove(),9000);
+      setTimeout(()=>div.remove(),10000);
       return;
     }
     alert(title+(body?'\n\n'+body:''));
@@ -53,7 +56,7 @@
     }
     if(firebase.messaging.isSupported){
       const supported=await firebase.messaging.isSupported();
-      if(!supported)throw new Error('Firebase phone push is not supported on this browser/device.');
+      if(!supported)throw new Error('Firebase web push is not supported on this browser/device.');
     }
     messaging=firebase.messaging();
     return messaging;
@@ -98,54 +101,71 @@
     }
   }
 
-  function updateButtons(){
-    const btn=document.getElementById(BTN_ID);
-    const copy=document.getElementById(COPY_ID);
-    if(!btn)return;
+  async function getReadyRegistration(){
+    if(!('serviceWorker' in navigator))throw new Error('Service worker is not supported on this phone.');
+    const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+    await reg.update().catch(()=>{});
+    await navigator.serviceWorker.ready;
+    return reg;
+  }
 
-    const saved=localStorage.getItem(TOKEN_KEY)||'';
-    if(Notification.permission==='granted'&&saved){
-      btn.textContent='Phone Push On';
-      btn.dataset.enabled='1';
-      if(copy)copy.style.display='';
-    }else{
-      btn.textContent='Enable Phone Push';
-      btn.dataset.enabled='0';
-      if(copy)copy.style.display='none';
+  async function ensurePermission(){
+    if(!('Notification' in window))throw new Error('Notifications are not supported on this phone.');
+    if(isIOS&&!standalone()){
+      throw new Error('On iPhone, open Warehouse Receiving from the Home Screen icon first.');
+    }
+    const permission=Notification.permission==='granted'
+      ? 'granted'
+      : await Notification.requestPermission();
+    if(permission!=='granted')throw new Error('Notification permission is not allowed.');
+  }
+
+  async function localNativeTest(){
+    try{
+      await ensurePermission();
+      const reg=await getReadyRegistration();
+      const name=currentUser?await getProfileName(currentUser):'Qaiyum';
+      await reg.showNotification(`Hi ${name}, local test works ✅`,{
+        body:'This test comes directly from the installed Warehouse Receiving app.',
+        icon:'./apple-touch-icon.png',
+        badge:'./apple-touch-icon.png',
+        tag:'wrs-local-native-test-'+Date.now()
+      });
+      toast('Local test sent','Lock the iPhone and check Notification Center.');
+    }catch(err){
+      console.error(err);
+      toast('Local Test Failed',err?.message||String(err));
     }
   }
 
-  async function enablePhonePush(){
-    const btn=document.getElementById(BTN_ID);
+  async function enablePhonePush({reset=false}={}){
+    const btn=document.getElementById(reset?RESET_ID:BTN_ID);
     if(btn)btn.disabled=true;
 
     try{
       if(!currentUser)throw new Error('Please login first.');
-      if(!('Notification'in window))throw new Error('This browser does not support notifications.');
-      if(!('serviceWorker'in navigator))throw new Error('This browser does not support service workers.');
-
-      if(isIOS&&!standalone()){
-        throw new Error('On iPhone, open Warehouse Receiving from the Home Screen icon first. Then enable phone push from inside the installed app.');
-      }
-
-      const permission=Notification.permission==='granted'
-        ? 'granted'
-        : await Notification.requestPermission();
-
-      if(permission!=='granted')throw new Error('Notification permission was not allowed.');
-
+      await ensurePermission();
       await ensureMessaging();
 
-      const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
-      await reg.update().catch(()=>{});
-      const readyReg=await navigator.serviceWorker.ready;
+      const reg=await getReadyRegistration();
+
+      if(reset){
+        try{
+          await messaging.deleteToken();
+        }catch(e){
+          console.warn('deleteToken warning',e);
+        }
+        localStorage.removeItem(TOKEN_KEY);
+        currentToken='';
+        await sleep(1200);
+      }
 
       const token=await messaging.getToken({
         vapidKey:VAPID_KEY,
-        serviceWorkerRegistration:readyReg
+        serviceWorkerRegistration:reg
       });
 
-      if(!token)throw new Error('Firebase did not return a phone registration token.');
+      if(!token)throw new Error('Firebase did not return a registration token.');
 
       currentToken=token;
       localStorage.setItem(TOKEN_KEY,token);
@@ -155,12 +175,12 @@
 
       updateButtons();
       toast(
-        'Phone Push Enabled',
-        `Hi ${name}. This phone is registered for push notifications.${saved?'':' The phone token is ready, but saving it to the account was blocked.'}`
+        reset?'Fresh FCM Token Created':'Phone Push Enabled',
+        `Hi ${name}. ${reset?'A fresh iPhone push token was created.':'This phone is registered.'}${saved?'':' Token saving to the account was blocked, but testing can continue.'}`
       );
     }catch(err){
       console.error(err);
-      toast('Phone Push Setup Failed',err?.message||String(err));
+      toast(reset?'Reset Phone Push Failed':'Phone Push Setup Failed',err?.message||String(err));
     }finally{
       if(btn)btn.disabled=false;
     }
@@ -169,45 +189,69 @@
   async function copyToken(){
     const token=currentToken||localStorage.getItem(TOKEN_KEY)||'';
     if(!token){
-      toast('No FCM Token','Enable Phone Push first.');
+      toast('No FCM Token','Enable or Reset Phone Push first.');
       return;
     }
     try{
       await navigator.clipboard.writeText(token);
-      toast('FCM Test Token Copied','Next we can paste this token into Firebase Console to send a test notification.');
+      toast('Fresh FCM Token Copied','Paste this token into Firebase Console → Send test message.');
     }catch(e){
       prompt('Copy this FCM test token:',token);
     }
   }
 
-  function mountButton(){
+  function updateButtons(){
+    const btn=document.getElementById(BTN_ID);
+    const reset=document.getElementById(RESET_ID);
+    const copy=document.getElementById(COPY_ID);
+    if(!btn)return;
+
+    const saved=localStorage.getItem(TOKEN_KEY)||'';
+    if(Notification.permission==='granted'&&saved){
+      btn.textContent='Phone Push On';
+      if(reset)reset.style.display='';
+      if(copy)copy.style.display='';
+    }else{
+      btn.textContent='Enable Phone Push';
+      if(reset)reset.style.display='none';
+      if(copy)copy.style.display='none';
+    }
+  }
+
+  function makeBtn(id,label,handler){
+    const b=document.createElement('button');
+    b.className='booking-mini-btn';
+    b.id=id;
+    b.type='button';
+    b.textContent=label;
+    b.addEventListener('click',handler);
+    return b;
+  }
+
+  function mountButtons(){
     const actions=document.querySelector('.booking-notification-head-actions');
     if(!actions||document.getElementById(BTN_ID))return false;
 
-    const btn=document.createElement('button');
-    btn.className='booking-mini-btn';
-    btn.id=BTN_ID;
-    btn.type='button';
-    btn.textContent='Enable Phone Push';
-    btn.addEventListener('click',enablePhonePush);
+    const local=makeBtn(LOCAL_ID,'Test Phone Alert',localNativeTest);
+    const enable=makeBtn(BTN_ID,'Enable Phone Push',()=>enablePhonePush({reset:false}));
+    const reset=makeBtn(RESET_ID,'Reset iPhone Push',()=>enablePhonePush({reset:true}));
+    const copy=makeBtn(COPY_ID,'Copy Fresh Token',copyToken);
 
-    const copy=document.createElement('button');
-    copy.className='booking-mini-btn';
-    copy.id=COPY_ID;
-    copy.type='button';
-    copy.textContent='Copy Test Token';
+    reset.style.display='none';
     copy.style.display='none';
-    copy.addEventListener('click',copyToken);
 
-    actions.insertBefore(btn,actions.firstChild);
-    actions.insertBefore(copy,actions.firstChild.nextSibling);
+    actions.insertBefore(local,actions.firstChild);
+    actions.insertBefore(enable,local.nextSibling);
+    actions.insertBefore(reset,enable.nextSibling);
+    actions.insertBefore(copy,reset.nextSibling);
+
     updateButtons();
     return true;
   }
 
   function watchUI(){
-    mountButton();
-    const observer=new MutationObserver(()=>mountButton());
+    mountButtons();
+    const observer=new MutationObserver(()=>mountButtons());
     observer.observe(document.documentElement,{childList:true,subtree:true});
   }
 
