@@ -24,4 +24,293 @@ function BIND(){if($('returnSection')?.dataset.rtb)return;$('returnSection').dat
 function SUB(){if(!auth?.currentUser)return;try{unsub?.()}catch{}let q=db.collection(COL),c=CO();if(CLIENT()&&c&&c!==ALL)q=q.where('companyId','==',CID(c));unsub=q.onSnapshot(s=>{rows=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));RENDER()},e=>{console.error(e);if($('returnSection')?.classList.contains('active'))T('Return sync error.',1)})}
 function INIT(){if(window.__GI_RETURN__)return;window.__GI_RETURN__=V;if(!window.firebase?.apps?.length)return;db=firebase.firestore();auth=firebase.auth();UI();auth.onAuthStateChanged(u=>u?setTimeout(SUB,300):(rows=[],RENDER()));new MutationObserver(ROLE).observe(document.body,{attributes:true,attributeFilter:['class']});if(auth.currentUser)setTimeout(SUB,300)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',INIT,{once:true});else INIT();
+})();/* ===== RETURN UI POLISH + GUIDE V2 ===== */
+(function () {
+  function applyReturnPolish() {
+    const section = document.getElementById('returnSection');
+    if (!section) return false;
+
+    if (!document.getElementById('rtUiPolishV2')) {
+      const style = document.createElement('style');
+      style.id = 'rtUiPolishV2';
+      style.textContent = `
+        #returnSection,
+        #rtModal {
+          font-family: Inter, "Segoe UI", Arial, sans-serif !important;
+          font-style: normal !important;
+        }
+
+        #returnSection *,
+        #rtModal * {
+          font-style: normal !important;
+        }
+
+        #returnSection .section-head {
+          align-items:flex-start !important;
+        }
+
+        .rt-stats span {
+          color:#9eabc2 !important;
+          letter-spacing:.04em;
+        }
+
+        .rt-grid label {
+          color:#9eabc2 !important;
+          font-size:12px !important;
+          font-weight:700 !important;
+        }
+
+        .rt-grid input,
+        .rt-grid select,
+        .rt-grid textarea,
+        .rt-filters input,
+        .rt-filters select {
+          background:#102142 !important;
+          color:#f1f5ff !important;
+          border:1px solid #435b88 !important;
+          border-radius:11px !important;
+          min-height:48px;
+          padding:11px 14px !important;
+          font-size:14px !important;
+          font-weight:600 !important;
+          box-shadow:none !important;
+        }
+
+        .rt-grid input::placeholder,
+        .rt-grid textarea::placeholder {
+          color:#8295b8 !important;
+        }
+
+        .rt-grid input:focus,
+        .rt-grid select:focus,
+        .rt-grid textarea:focus {
+          border-color:#7899ea !important;
+          box-shadow:0 0 0 3px rgba(89,127,229,.16) !important;
+        }
+
+        .rt-item {
+          background:rgba(255,255,255,.025) !important;
+          border:1px solid #3b527d !important;
+          border-radius:13px !important;
+          padding:12px !important;
+        }
+
+        .rt-cond button,
+        #rAdd,
+        #rCant,
+        .rt-buttons button {
+          color:#eef3ff !important;
+          background:#14264a !important;
+          border:1px solid #647db7 !important;
+          font-weight:700 !important;
+        }
+
+        .rt-cond .good.on {
+          background:#e3f5ea !important;
+          color:#14754a !important;
+          border-color:#add9bf !important;
+        }
+
+        .rt-cond .bad.on {
+          background:#ffe7e9 !important;
+          color:#b43d47 !important;
+          border-color:#efb2b9 !important;
+        }
+
+        .rt-buttons .primary {
+          color:#fff !important;
+          background:linear-gradient(135deg,#416fd3,#8a3fc1) !important;
+          border-color:#7895e1 !important;
+        }
+
+        #rCancel,
+        #rDraft,
+        #rCant,
+        .rt-cond .remove {
+          color:#e8efff !important;
+        }
+
+        .rt-subhead b {
+          color:#f5f8ff !important;
+        }
+
+        .rt-guide-btn {
+          border:1px solid #5c74aa;
+          background:#172b50;
+          color:#eef4ff;
+          border-radius:10px;
+          padding:11px 15px;
+          font-weight:800;
+          cursor:pointer;
+        }
+
+        .rt-guide-overlay {
+          position:fixed;
+          inset:0;
+          z-index:20000;
+          background:rgba(5,13,28,.76);
+          display:none;
+          align-items:center;
+          justify-content:center;
+          padding:20px;
+        }
+
+        .rt-guide-overlay.show { display:flex; }
+
+        .rt-guide-card {
+          width:min(700px,94vw);
+          max-height:88vh;
+          overflow:auto;
+          background:#102142;
+          border:1px solid #40547c;
+          border-radius:18px;
+          box-shadow:0 24px 60px rgba(0,0,0,.35);
+        }
+
+        .rt-guide-head {
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          padding:18px 20px;
+          border-bottom:1px solid #344a72;
+        }
+
+        .rt-guide-head h3 {
+          margin:0;
+          color:#f7f9ff;
+          font-size:22px;
+        }
+
+        .rt-guide-head p {
+          margin:4px 0 0;
+          color:#9eabc2;
+          font-size:13px;
+        }
+
+        .rt-guide-close {
+          width:36px;
+          height:36px;
+          border-radius:9px;
+          border:1px solid #536b9e;
+          background:#172b50;
+          color:#fff;
+          font-size:20px;
+          cursor:pointer;
+        }
+
+        .rt-guide-body { padding:18px 20px; }
+
+        .rt-guide-step {
+          display:grid;
+          grid-template-columns:40px 1fr;
+          gap:13px;
+          padding:12px 0;
+          border-bottom:1px solid rgba(255,255,255,.07);
+        }
+
+        .rt-guide-step:last-child { border-bottom:0; }
+
+        .rt-guide-num {
+          width:40px;
+          height:40px;
+          border-radius:50%;
+          display:grid;
+          place-items:center;
+          background:linear-gradient(135deg,#426fda,#963fc0);
+          color:#fff;
+          font-weight:900;
+        }
+
+        .rt-guide-step strong {
+          color:#f5f8ff;
+          display:block;
+          margin-bottom:4px;
+        }
+
+        .rt-guide-step p {
+          color:#a8b5cf;
+          margin:0;
+          line-height:1.45;
+          font-size:13px;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const toolbar = section.querySelector('.section-head .toolbar');
+
+    if (toolbar && !document.getElementById('rtGuideBtn')) {
+      const btn = document.createElement('button');
+      btn.id = 'rtGuideBtn';
+      btn.type = 'button';
+      btn.className = 'rt-guide-btn';
+      btn.textContent = '✦ Return Guide';
+      toolbar.insertBefore(btn, toolbar.firstChild);
+
+      const overlay = document.createElement('div');
+      overlay.id = 'rtGuideOverlay';
+      overlay.className = 'rt-guide-overlay';
+      overlay.innerHTML = `
+        <div class="rt-guide-card">
+          <div class="rt-guide-head">
+            <div>
+              <h3>Return Management Guide</h3>
+              <p>Quick guide for processing a return case.</p>
+            </div>
+            <button class="rt-guide-close" type="button">×</button>
+          </div>
+
+          <div class="rt-guide-body">
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">1</div>
+              <div><strong>Create Return Case</strong><p>Click + New Return Case when the returned parcel arrives.</p></div>
+            </div>
+
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">2</div>
+              <div><strong>Enter Return Information</strong><p>Fill tracking number, marketplace order ID, platform and client return ID if available.</p></div>
+            </div>
+
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">3</div>
+              <div><strong>Add Item / SKU</strong><p>Enter SKU and quantity. Use + Add Item for multiple items in the same parcel.</p></div>
+            </div>
+
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">4</div>
+              <div><strong>Check Condition</strong><p>Select Good or Damaged. Damaged returns require issue details and photo evidence.</p></div>
+            </div>
+
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">5</div>
+              <div><strong>Select Action</strong><p>Choose the correct disposition such as Return to Stock, Quarantine or Pending Client Decision.</p></div>
+            </div>
+
+            <div class="rt-guide-step">
+              <div class="rt-guide-num">6</div>
+              <div><strong>Save or Complete</strong><p>Save Draft while checking, or Complete Return once all details are confirmed.</p></div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      btn.onclick = () => overlay.classList.add('show');
+      overlay.querySelector('.rt-guide-close').onclick = () => overlay.classList.remove('show');
+      overlay.onclick = e => {
+        if (e.target === overlay) overlay.classList.remove('show');
+      };
+    }
+
+    return true;
+  }
+
+  if (!applyReturnPolish()) {
+    const timer = setInterval(() => {
+      if (applyReturnPolish()) clearInterval(timer);
+    }, 300);
+
+    setTimeout(() => clearInterval(timer), 10000);
+  }
 })();
