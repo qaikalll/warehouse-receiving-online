@@ -452,9 +452,15 @@
     updateBookingSummary();
   }
   function loadBookingAvailability(force=false){
-    const date=$('bookingDate')?.value||tomorrowISO();
-    if(!$('bookingDate'))return;
+  const defaultDate=isAdmin()?todayISO():tomorrowISO();
+  const date=$('bookingDate')?.value||defaultDate;
+  if(!$('bookingDate'))return;
+
+  if(isAdmin()){
+    $('bookingDate').removeAttribute('min');
+  }else{
     $('bookingDate').min=tomorrowISO();
+  }
     if(!$('bookingDate').value)$('bookingDate').value=date;
     if(bookingSlotUnsubscribe){try{bookingSlotUnsubscribe()}catch(e){}bookingSlotUnsubscribe=null;}
     bookingSlotsForDate=new Set();renderBookingSlots();
