@@ -831,12 +831,7 @@
     ]
   };
 
-  const TUTORIAL_SPECIAL_TEXT = {
-    ms:{themeToggle:['Mod Tema','Tekan butang bulan atau matahari di bahagian atas untuk bertukar antara Light Mode dan Night Mode. Pilihan disimpan pada peranti ini.']},
-    en:{themeToggle:['Theme Mode','Press this moon or sun button on the top bar to switch between Light Mode and Night Mode. Your selected mode stays saved on this device.']},
-    my:{themeToggle:['Night Mode / Light Mode','အပေါ်ဘက်ရှိ လ သို့မဟုတ် နေ ပုံစံ button ကိုနှိပ်ပြီး Light Mode နှင့် Night Mode အကြား ပြောင်းနိုင်ပါသည်။ ရွေးထားသော mode ကို ဒီ device မှာ သိမ်းထားပါမည်။']},
-    zh:{themeToggle:['深色 / 浅色模式','点击顶部这个月亮或太阳按钮，即可在 Light Mode 与 Night Mode 之间切换。系统会在此设备保存您的模式选择。']}
-  };
+ const TUTORIAL_SPECIAL_TEXT={ms:{themeToggle:['Mod Tema','Tekan butang bulan atau matahari di bahagian atas untuk bertukar antara Light Mode dan Night Mode. Pilihan disimpan pada peranti ini.'],returnModule:['Return Management','Selepas Discrepancy, gunakan Return Management untuk rekod, inspect dan track semua parcel return mengikut company.'],returnGuide:['Panduan Return','Tekan Return Guide untuk belajar proses return penuh termasuk tracking, Order ID, SKU, condition, gambar bukti, disposition dan status.']},en:{themeToggle:['Theme Mode','Press this moon or sun button on the top bar to switch between Light Mode and Night Mode. Your selected mode stays saved on this device.'],returnModule:['Return Management','After Discrepancy, use Return Management to record, inspect and track returned parcels for each company.'],returnGuide:['Return Guide','Use Return Guide for the full return workflow including tracking, Order ID, SKU, condition, photo evidence, disposition and status.']},my:{themeToggle:['Night Mode / Light Mode','အပေါ်ဘက်ရှိ လ သို့မဟုတ် နေ ပုံစံ button ကိုနှိပ်ပြီး Light Mode နှင့် Night Mode အကြား ပြောင်းနိုင်ပါသည်။ ရွေးထားသော mode ကို ဒီ device မှာ သိမ်းထားပါမည်။'],returnModule:['Return Management','Discrepancy ပြီးနောက် Return Management တွင် return parcel များကို record, inspect နှင့် track လုပ်နိုင်ပါသည်။'],returnGuide:['Return Guide','Tracking, Order ID, SKU, condition, photo evidence, disposition နှင့် status အပါအဝင် return process အပြည့်အစုံကို ဒီ Guide မှာ ကြည့်နိုင်ပါသည်။']},zh:{themeToggle:['深色 / 浅色模式','点击顶部这个月亮或太阳按钮，即可在 Light Mode 与 Night Mode 之间切换。系统会在此设备保存您的模式选择。'],returnModule:['Return Management','完成 Discrepancy 后，可使用 Return Management 记录、检查并跟踪各公司的退货包裹。'],returnGuide:['Return Guide','通过 Return Guide 查看完整退货流程，包括 Tracking、Order ID、SKU、Condition、照片证据、Disposition 和 Status。']}};
 
   function tutorialPreferences(){
     try{return JSON.parse(localStorage.getItem(TUTORIAL_KEY))||{};}catch(e){return {};}
