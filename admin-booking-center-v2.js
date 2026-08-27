@@ -169,7 +169,7 @@
           <div><label>Company</label><select id="bookingAdminCompany"><option value="">All companies</option></select></div>
           <button class="btn btn-outline" id="bookingAdminRefresh" type="button">↻ Live Refresh</button>
         </div>
-        <div class="booking-admin-table-card"><div class="booking-admin-table-head"><strong>Customer Booking Pipeline</strong><span id="bookingAdminResultCount">0 bookings</span></div><div class="booking-admin-list" id="bookingAdminList"></div></div>`;
+               <div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary" id="bookingAdminNewBooking" type="button">＋ Admin Booking</button></div><div class="booking-admin-table-card"><div class="booking-admin-table-head"><strong>Customer Booking Pipeline</strong><span id="bookingAdminResultCount">0 bookings</span></div><div class="booking-admin-list" id="bookingAdminList"></div></div>`;
       main.appendChild(section);
       $('bookingAdminSearch').addEventListener('input',e=>{state.filters.search=e.target.value;renderCenter()});
       $('bookingAdminRange').addEventListener('change',e=>{state.filters.range=e.target.value;renderCenter()});
