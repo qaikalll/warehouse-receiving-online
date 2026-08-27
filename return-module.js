@@ -1246,4 +1246,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }, 200);
 
   setTimeout(() => clearInterval(timer), 10000);
-})();
+})();/* RETURN GUIDE CLICK FALLBACK */
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('#rtGuideBtn');
+  if (!btn) return;
+
+  const openGuide = () => {
+    const layer = document.getElementById('rtTourLayer');
+    if (!layer) return false;
+
+    layer.classList.add('show', 'language-pick');
+    layer.setAttribute('aria-hidden', 'false');
+    return true;
+  };
+
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  if (!openGuide()) {
+    setTimeout(openGuide, 300);
+  }
+}, true);
