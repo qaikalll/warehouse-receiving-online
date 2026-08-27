@@ -492,4 +492,56 @@ body.theme-dark .booking-submit-summary{background:#172b47;border-color:#31527b;
   animation:none !important;
   transform:none !important;
   will-change:auto !important;
+}/* ===== REMOVE HEAVY MODULE BACKGROUND V2 ===== */
+
+/* Blank background for operational modules */
+#bookingSection.has-wave-bg,
+#receivingSection.has-wave-bg,
+#discrepancySection.has-wave-bg,
+#returnSection.has-wave-bg {
+  background:none !important;
+}
+
+/* Completely remove animated/image background layers */
+#bookingSection.has-wave-bg::before,
+#bookingSection.has-wave-bg::after,
+#receivingSection.has-wave-bg::before,
+#receivingSection.has-wave-bg::after,
+#discrepancySection.has-wave-bg::before,
+#discrepancySection.has-wave-bg::after,
+#returnSection.has-wave-bg::before,
+#returnSection.has-wave-bg::after {
+  content:none !important;
+  display:none !important;
+  background:none !important;
+  background-image:none !important;
+  animation:none !important;
+  transform:none !important;
+  filter:none !important;
+  will-change:auto !important;
+}
+
+/* Remove expensive glass blur on these modules */
+#bookingSection .card,
+#bookingSection .workspace-banner,
+#bookingSection .workspace-card,
+#bookingSection .booking-rule,
+#bookingSection .table-card,
+
+#receivingSection .card,
+#receivingSection .workspace-banner,
+#receivingSection .workspace-card,
+#receivingSection .table-card,
+
+#discrepancySection .card,
+#discrepancySection .workspace-banner,
+#discrepancySection .workspace-card,
+#discrepancySection .table-card,
+
+#returnSection .card,
+#returnSection .workspace-banner,
+#returnSection .workspace-card,
+#returnSection .table-card {
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
 }
