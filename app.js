@@ -1485,6 +1485,24 @@
   $('receivingForm').addEventListener('submit',async e=>{e.preventDefault();if(!requireEditor())return;const r=getReceivingFormRecord();if(!validateReceiving(r))return;if(await saveReceivingRecord(r))resetReceivingForm();});
   $('discrepancyForm').addEventListener('submit',async e=>{e.preventDefault();if(!requireEditor())return;const d=getDiscrepancyFormRecord();if(!validateDiscrepancy(d))return;await saveDiscrepancy(d);});
   $('resetReceivingBtn').addEventListener('click',resetReceivingForm);$('resetDiscrepancyBtn').addEventListener('click',resetDiscrepancyForm);
+  $('newReceivingBtn').addEventListener('click',()=>{
+  if(!requireEditor()) return;
+
+  if(isAllCompanies()){
+    toast('Select a company workspace first.','warning');
+    return;
+  }
+
+  resetReceivingForm();
+
+  if($('receivingBookingSlot')){
+    $('receivingBookingSlot').value='';
+  }
+
+  $('doNumber')?.focus();
+
+  toast('New manual receiving ready.','success');
+});
   $('createDiscrepancyBtn').addEventListener('click',async()=>{if(!requireEditor())return;const r=getReceivingFormRecord();if(!validateReceiving(r))return;if(await saveReceivingRecord(r,true))createDiscrepancyFromReceiving(r)});
   $('exportReceivingBtn').addEventListener('click',()=>exportReceiving(filteredReceiving(false)));$('exportDiscrepancyBtn').addEventListener('click',exportDiscrepancies);
   $('refreshDashboardBtn').addEventListener('click',renderDashboard);
