@@ -247,60 +247,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       btn.textContent = '✦ Return Guide';
       toolbar.insertBefore(btn, toolbar.firstChild);
 
-      const overlay = document.createElement('div');
-      overlay.id = 'rtGuideOverlay';
-      overlay.className = 'rt-guide-overlay';
-      overlay.innerHTML = `
-        <div class="rt-guide-card">
-          <div class="rt-guide-head">
-            <div>
-              <h3>Return Management Guide</h3>
-              <p>Quick guide for processing a return case.</p>
-            </div>
-            <button class="rt-guide-close" type="button">×</button>
-          </div>
-
-          <div class="rt-guide-body">
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">1</div>
-              <div><strong>Create Return Case</strong><p>Click + New Return Case when the returned parcel arrives.</p></div>
-            </div>
-
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">2</div>
-              <div><strong>Enter Return Information</strong><p>Fill tracking number, marketplace order ID, platform and client return ID if available.</p></div>
-            </div>
-
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">3</div>
-              <div><strong>Add Item / SKU</strong><p>Enter SKU and quantity. Use + Add Item for multiple items in the same parcel.</p></div>
-            </div>
-
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">4</div>
-              <div><strong>Check Condition</strong><p>Select Good or Damaged. Damaged returns require issue details and photo evidence.</p></div>
-            </div>
-
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">5</div>
-              <div><strong>Select Action</strong><p>Choose the correct disposition such as Return to Stock, Quarantine or Pending Client Decision.</p></div>
-            </div>
-
-            <div class="rt-guide-step">
-              <div class="rt-guide-num">6</div>
-              <div><strong>Save or Complete</strong><p>Save Draft while checking, or Complete Return once all details are confirmed.</p></div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(overlay);
-
-      btn.onclick = () => overlay.classList.add('show');
-      overlay.querySelector('.rt-guide-close').onclick = () => overlay.classList.remove('show');
-      overlay.onclick = e => {
-        if (e.target === overlay) overlay.classList.remove('show');
-      };
+      
     }
 
     return true;
@@ -316,6 +263,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();/* ===== RETURN AUDIT FIX V3 ===== */
 (() => {
   function fixReturnUI() {
+    if (!document.getElementById('rtGuideOverlay')) return true;
     const section = document.getElementById('returnSection');
 
     if (section) {
