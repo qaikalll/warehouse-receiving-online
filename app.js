@@ -479,7 +479,7 @@
   function resetBookingForm(){
     const form=$('bookingForm');if(!form)return;
     form.reset();hideError('bookingError');
-    const min=tomorrowISO();$('bookingDate').min=min;$('bookingDate').value=min;$('bookingSlotStart').value='';$('bookingSlotEnd').value='';
+    const defaultDate=isAdmin()?todayISO():tomorrowISO();if(isAdmin())$('bookingDate').removeAttribute('min');else $('bookingDate').min=tomorrowISO();$('bookingDate').value=defaultDate;$('bookingSlotStart').value='';$('bookingSlotEnd').value='';
     $('bookingCompanyName').value=bookingCompany();
     loadBookingAvailability(true);updateBookingSummary();
   }
