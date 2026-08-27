@@ -489,7 +489,7 @@
     const doNumber=$('bookingDONumber').value.trim(),poNumber=$('bookingPONumber').value.trim(),vehicleNumber=$('bookingVehicleNumber').value.trim(),transportType=$('bookingTransportType').value,expectedRaw=$('bookingExpectedQty').value,remarks=$('bookingRemarks').value.trim();
     const missing=[];
     if(!company)missing.push('Company');if(!date)missing.push('Delivery Date');if(!slot)missing.push('Time Slot');if(!doNumber)missing.push('DO Number');if(!poNumber)missing.push('PO Number');if(!vehicleNumber)missing.push('Vehicle Number');if(!transportType)missing.push('Transport Type');if(expectedRaw==='')missing.push('Expected Quantity');
-    if(missing.length){showError('bookingError','Please complete: '+missing.join(', '));return;}
+   if(!isAdmin()&&date<tomorrowISO()){showError('bookingError','Booking must be submitted at least 1 day before delivery.');return;}
     if(date<tomorrowISO()){showError('bookingError','Booking must be submitted at least 1 day before delivery.');return;}
     if(slot.breakTime){showError('bookingError','1:00–2:00 PM is warehouse break time. Please choose another slot.');return;}
     const duplicate=receivingRecords.some(r=>r.customer===company&&String(r.doNumber||'').toLowerCase()===doNumber.toLowerCase());
