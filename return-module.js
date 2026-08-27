@@ -313,4 +313,123 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     setTimeout(() => clearInterval(timer), 10000);
   }
+})();/* ===== RETURN AUDIT FIX V3 ===== */
+(() => {
+  function fixReturnUI() {
+    const section = document.getElementById('returnSection');
+
+    if (section) {
+      section.classList.remove('has-wave-bg');
+      section.classList.add('rt-return-flat');
+    }
+
+    if (!document.getElementById('rtAuditFixV3')) {
+      const style = document.createElement('style');
+      style.id = 'rtAuditFixV3';
+      style.textContent = `
+        #returnSection.rt-return-flat {
+          position:relative;
+          overflow:hidden;
+          padding:16px 16px 24px;
+          border-radius:24px;
+          background:var(--card, rgba(255,255,255,.035)) !important;
+          border:1px solid var(--line, #30466e);
+          transform:none !important;
+        }
+
+        #returnSection::before,
+        #returnSection::after,
+        #returnSection .rt-stats .card {
+          transform:none !important;
+          animation:none !important;
+        }
+
+        .rt-guide-card {
+          position:relative;
+          overflow:hidden;
+        }
+
+        .rt-guide-body {
+          padding-right:245px !important;
+        }
+
+        .rt-guide-figure {
+          position:absolute;
+          right:12px;
+          bottom:0;
+          width:225px;
+          height:82%;
+          display:flex;
+          align-items:flex-end;
+          justify-content:center;
+          pointer-events:none;
+        }
+
+        .rt-guide-figure img {
+          width:100%;
+          max-height:100%;
+          object-fit:contain;
+          filter:drop-shadow(0 18px 20px rgba(0,0,0,.28));
+          animation:rtFigureFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes rtFigureFloat {
+          0%,100% { transform:translateY(0); }
+          50% { transform:translateY(-8px); }
+        }
+
+        @media(max-width:700px) {
+          .rt-guide-body {
+            padding-right:20px !important;
+            padding-top:215px !important;
+          }
+
+          .rt-guide-figure {
+            width:190px;
+            height:190px;
+            top:62px;
+            bottom:auto;
+            right:50%;
+            transform:translateX(50%);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const overlay = document.getElementById('rtGuideOverlay');
+    const card = overlay?.querySelector('.rt-guide-card');
+    const originalGuide = document.querySelector('.tutorial-guide');
+    const guideSrc = originalGuide?.src || '';
+
+    if (
+      card &&
+      guideSrc.startsWith('data:image/webp') &&
+      !card.querySelector('.rt-guide-figure')
+    ) {
+      const figure = document.createElement('div');
+      figure.className = 'rt-guide-figure';
+
+      const img = document.createElement('img');
+      img.src = guideSrc;
+      img.alt = 'Qaiyum Guide';
+
+      figure.appendChild(img);
+      card.appendChild(figure);
+    }
+
+    return !!(
+      section &&
+      card &&
+      card.querySelector('.rt-guide-figure')
+    );
+  }
+
+  if (!fixReturnUI()) {
+    const timer = setInterval(() => {
+      if (fixReturnUI()) clearInterval(timer);
+    }, 250);
+
+    setTimeout(() => clearInterval(timer), 10000);
+  }
 })();
