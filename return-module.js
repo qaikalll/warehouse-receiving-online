@@ -432,4 +432,700 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     setTimeout(() => clearInterval(timer), 10000);
   }
+})();/* ===== RETURN MODULE FINAL UI + INTERACTIVE TOUR V4 ===== */
+(() => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function setupReturnV4() {
+    const section = document.getElementById('returnSection');
+    if (!section || document.getElementById('rtFinalV4Style')) return;
+
+    /* REMOVE OLD WRONG PATCH */
+    document.getElementById('rtAuditFixV3')?.remove();
+    document.getElementById('rtGuideOverlay')?.remove();
+
+    /* RESTORE SAME ANIMATED BACKGROUND AS OTHER MODULES */
+    section.classList.remove('rt-return-flat');
+    section.classList.add('has-wave-bg');
+
+    /* CLEAN STAT CARDS */
+    const statIcons = ['↩', '◷', '✓', '!', '✓'];
+    section.querySelectorAll('.rt-stats .card').forEach((card, i) => {
+      card.classList.add('rt-stat-clean');
+
+      if (!card.querySelector('.rt-stat-symbol')) {
+        const icon = document.createElement('div');
+        icon.className = 'rt-stat-symbol';
+        icon.textContent = statIcons[i] || '•';
+        card.appendChild(icon);
+      }
+    });
+
+    const style = document.createElement('style');
+    style.id = 'rtFinalV4Style';
+    style.textContent = `
+      /* ---------- RETURN PAGE ---------- */
+
+      #returnSection.has-wave-bg {
+        transform:none !important;
+      }
+
+      #returnSection .section-head,
+      #returnSection .rt-stats,
+      #returnSection .filter-card,
+      #returnSection .table-card {
+        transform:none !important;
+      }
+
+      #returnSection .rt-stats {
+        display:grid !important;
+        grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+        gap:13px !important;
+        margin-bottom:18px !important;
+      }
+
+      #returnSection .rt-stats .rt-stat-clean {
+        position:relative !important;
+        display:block !important;
+        min-height:112px !important;
+        padding:18px 18px !important;
+        overflow:hidden !important;
+        border-radius:14px !important;
+        transform:none !important;
+        animation:none !important;
+      }
+
+      #returnSection .rt-stats .rt-stat-clean::before {
+        content:"";
+        position:absolute;
+        left:0;
+        top:0;
+        bottom:0;
+        width:3px;
+        background:linear-gradient(
+          180deg,
+          var(--blue,#5a3fc0),
+          var(--accent,#e3138c)
+        );
+      }
+
+      #returnSection .rt-stats span {
+        display:block !important;
+        margin:0 !important;
+        padding:0 !important;
+        font-size:12px !important;
+        line-height:1.2 !important;
+        font-weight:800 !important;
+        text-transform:uppercase !important;
+        letter-spacing:.04em !important;
+        color:var(--muted,#6c7a90) !important;
+      }
+
+      #returnSection .rt-stats b {
+        display:block !important;
+        margin:10px 0 0 !important;
+        padding:0 !important;
+        font-family:Inter,"Segoe UI",Arial,sans-serif !important;
+        font-size:31px !important;
+        font-weight:900 !important;
+        font-style:normal !important;
+        line-height:1 !important;
+        letter-spacing:-.02em !important;
+        color:var(--text,#172033) !important;
+      }
+
+      body.theme-dark #returnSection .rt-stats b {
+        color:#f2f6ff !important;
+      }
+
+      .rt-stat-symbol {
+        position:absolute;
+        right:15px;
+        top:50%;
+        transform:translateY(-50%);
+        width:42px;
+        height:42px;
+        border-radius:12px;
+        display:grid;
+        place-items:center;
+        background:rgba(90,63,192,.12);
+        color:#8a73e8;
+        font-size:20px;
+        font-weight:900;
+      }
+
+      #rtGuideBtn {
+        background:linear-gradient(
+          115deg,
+          #211a54,
+          #5a3fc0 60%,
+          #e3138c
+        ) !important;
+        color:#fff !important;
+        border:0 !important;
+        box-shadow:0 7px 18px rgba(90,63,192,.22) !important;
+      }
+
+      /* Return tutorial figure moves left/right */
+      #rtTourLayer.rt-figure-left .tutorial-guide-wrap {
+        left:18px !important;
+        right:auto !important;
+      }
+
+      #rtTourLayer.rt-figure-left .tutorial-dialog {
+        right:45px !important;
+        left:auto !important;
+      }
+
+      #rtTourLayer.rt-figure-right .tutorial-guide-wrap {
+        right:18px !important;
+        left:auto !important;
+      }
+
+      #rtTourLayer.rt-figure-right .tutorial-dialog {
+        left:45px !important;
+        right:auto !important;
+      }
+
+      @media(max-width:900px) {
+        #returnSection .rt-stats {
+          grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+        }
+      }
+
+      @media(max-width:620px) {
+        #returnSection .rt-stats {
+          grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+        }
+
+        #rtTourLayer .tutorial-guide-wrap {
+          left:auto !important;
+          right:-8px !important;
+        }
+
+        #rtTourLayer .tutorial-dialog {
+          left:12px !important;
+          right:12px !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    /* ---------- BUILD REAL INTERACTIVE GUIDE ---------- */
+
+    const originalFigure =
+      document.querySelector('#tutorialLayer .tutorial-guide') ||
+      document.querySelector('.tutorial-guide');
+
+    const layer = document.createElement('div');
+    layer.id = 'rtTourLayer';
+    layer.className = 'tutorial-layer';
+
+    layer.innerHTML = `
+      <div class="tutorial-spotlight" id="rtTourSpotlight"></div>
+
+      <div class="tutorial-guide-wrap">
+        <img
+          class="tutorial-guide"
+          id="rtTourFigure"
+          alt="Qaiyum Guide"
+        >
+      </div>
+
+      <section class="tutorial-language-panel">
+        <div class="language-panel-top">
+          <div class="language-eyebrow">
+            Qaiyum Interactive Guide
+          </div>
+
+          <h2>Choose tutorial language</h2>
+
+          <p>
+            Select one language before the step-by-step
+            Return guide begins.
+          </p>
+
+          <span class="language-guide-name">
+            Return Management Guide
+          </span>
+        </div>
+
+        <div class="language-options">
+          <button
+            class="language-option"
+            data-rt-lang="ms"
+            type="button"
+          >
+            <span class="language-code">BM</span>
+            <strong>Bahasa Melayu</strong>
+            <small>Panduan Return dalam Bahasa Melayu</small>
+          </button>
+
+          <button
+            class="language-option"
+            data-rt-lang="en"
+            type="button"
+          >
+            <span class="language-code">EN</span>
+            <strong>English</strong>
+            <small>Continue Return guide in English</small>
+          </button>
+
+          <button
+            class="language-option"
+            data-rt-lang="my"
+            type="button"
+          >
+            <span class="language-code">MM</span>
+            <strong>မြန်မာ</strong>
+            <small>Return လမ်းညွှန်</small>
+          </button>
+
+          <button
+            class="language-option"
+            data-rt-lang="zh"
+            type="button"
+          >
+            <span class="language-code">中文</span>
+            <strong>Chinese</strong>
+            <small>查看退货操作指南</small>
+          </button>
+        </div>
+
+        <button
+          class="language-later"
+          id="rtTourLater"
+          type="button"
+        >
+          Maybe later
+        </button>
+      </section>
+
+      <section class="tutorial-dialog">
+        <div class="tutorial-dialog-top"></div>
+
+        <div class="tutorial-dialog-body">
+          <div class="tutorial-meta">
+            <span class="tutorial-name">
+              Qaiyum Guide · Return
+            </span>
+
+            <span
+              class="tutorial-step-count"
+              id="rtTourCount"
+            ></span>
+          </div>
+
+          <h2
+            class="tutorial-title"
+            id="rtTourTitle"
+          ></h2>
+
+          <p
+            class="tutorial-copy"
+            id="rtTourCopy"
+          ></p>
+
+          <div
+            class="tutorial-progress"
+            id="rtTourProgress"
+          ></div>
+        </div>
+
+        <div class="tutorial-actions">
+          <button
+            class="tutorial-action tutorial-back"
+            id="rtTourBack"
+            type="button"
+          >
+            Back
+          </button>
+
+          <button
+            class="tutorial-action tutorial-skip"
+            id="rtTourSkip"
+            type="button"
+          >
+            Skip
+          </button>
+
+          <button
+            class="tutorial-action tutorial-next"
+            id="rtTourNext"
+            type="button"
+          >
+            Next →
+          </button>
+        </div>
+      </section>
+    `;
+
+    document.body.appendChild(layer);
+
+    if (originalFigure?.src) {
+      document.getElementById('rtTourFigure').src =
+        originalFigure.src;
+    }
+
+    const TEXT = {
+      en: [
+        ['Return Management',
+          'This module records, inspects and tracks every customer return case.'],
+
+        ['Create a new return case',
+          'Click New Return Case when a returned parcel arrives at the warehouse.'],
+
+        ['Scan the tracking number',
+          'Scan or enter the parcel tracking number. The system will also warn you about possible duplicate returns.'],
+
+        ['Enter the marketplace order',
+          'Enter the Shopee, Lazada or website order ID. Use Can\\'t Track only when the original order cannot be identified.'],
+
+        ['Record the returned item',
+          'Enter the SKU and quantity. Use Add Item when one return parcel contains multiple SKUs.'],
+
+        ['Inspect item condition',
+          'Choose Good or Damaged for each returned item.'],
+
+        ['Record the return issue',
+          'For damaged or abnormal returns, select the correct issue type and add a clear remark.'],
+
+        ['Upload photo evidence',
+          'Attach clear photo evidence for damaged, worn, wrong or abnormal returned items.'],
+
+        ['Choose disposition',
+          'Select the next warehouse action such as Return to Stock, Quarantine or Pending Client Decision.'],
+
+        ['Save or complete',
+          'Use Save Draft while inspection is still ongoing. Complete Return when all information has been confirmed.'],
+
+        ['Track all return cases',
+          'Completed and pending return cases are shown here for tracking, review and export.']
+      ],
+
+      ms: [
+        ['Return Management',
+          'Modul ini digunakan untuk merekod, memeriksa dan menjejak setiap kes return customer.'],
+
+        ['Buka kes return baru',
+          'Tekan New Return Case apabila parcel return sampai ke warehouse.'],
+
+        ['Scan tracking number',
+          'Scan atau masukkan tracking parcel. Sistem juga akan beri amaran jika tracking yang sama pernah direkod.'],
+
+        ['Masukkan marketplace order',
+          'Masukkan Order ID Shopee, Lazada atau website. Gunakan Can\\'t Track hanya jika order asal memang tidak dapat dikenal pasti.'],
+
+        ['Rekod item yang dipulangkan',
+          'Masukkan SKU dan quantity. Tekan Add Item jika satu parcel mempunyai lebih daripada satu SKU.'],
+
+        ['Periksa keadaan item',
+          'Pilih Good atau Damaged untuk setiap item yang dipulangkan.'],
+
+        ['Rekod isu return',
+          'Untuk item rosak atau bermasalah, pilih Issue Type yang betul dan masukkan remark.'],
+
+        ['Upload bukti gambar',
+          'Lampirkan gambar yang jelas untuk barang rosak, worn, salah atau keadaan luar biasa.'],
+
+        ['Pilih disposition',
+          'Pilih tindakan seterusnya seperti Return to Stock, Quarantine atau Pending Client Decision.'],
+
+        ['Simpan atau complete',
+          'Gunakan Save Draft jika pemeriksaan belum selesai. Tekan Complete Return apabila semua maklumat telah disahkan.'],
+
+        ['Track semua return',
+          'Semua return yang pending atau completed boleh disemak dan diexport di bahagian ini.']
+      ]
+    };
+
+    TEXT.zh = TEXT.en;
+    TEXT.my = TEXT.en;
+
+    const steps = [
+      { target:'#returnSection .section-head' },
+      { target:'#rtNew' },
+      { target:'#rTracking', modal:true },
+      { target:'#rOrder', modal:true },
+      { target:'#rItems', modal:true },
+      { target:'#rItems .rt-cond', modal:true },
+      { target:'#rIssueBox', modal:true, issue:true },
+      { target:'#rPhoto', modal:true, issue:true },
+      { target:'#rDisposition', modal:true },
+      { target:'#rtForm .rt-buttons', modal:true },
+      { target:'#returnSection .table-card', closeModal:true }
+    ];
+
+    let index = 0;
+    let language = 'en';
+    let active = false;
+
+    const spotlight =
+      document.getElementById('rtTourSpotlight');
+
+    const guide =
+      layer.querySelector('.tutorial-guide-wrap');
+
+    const dialog =
+      layer.querySelector('.tutorial-dialog');
+
+    async function ensureStep(step) {
+      document
+        .querySelector('.nav-btn[data-section="return"]')
+        ?.click();
+
+      await sleep(120);
+
+      if (step.modal) {
+        const modal = document.getElementById('rtModal');
+
+        if (!modal?.classList.contains('open')) {
+          document.getElementById('rtNew')?.click();
+          await sleep(250);
+        }
+      }
+
+      if (step.issue) {
+        document
+          .getElementById('rIssueBox')
+          ?.classList.add('show');
+      }
+
+      if (step.closeModal) {
+        document
+          .getElementById('rtModal')
+          ?.classList.remove('open');
+
+        await sleep(180);
+      }
+    }
+
+    function positionFigure(rect) {
+      if (innerWidth <= 680) {
+        layer.classList.remove(
+          'rt-figure-left',
+          'rt-figure-right'
+        );
+        return;
+      }
+
+      const targetIsRight =
+        rect.left + rect.width / 2 >
+        innerWidth / 2;
+
+      layer.classList.toggle(
+        'rt-figure-left',
+        targetIsRight
+      );
+
+      layer.classList.toggle(
+        'rt-figure-right',
+        !targetIsRight
+      );
+    }
+
+    async function renderStep() {
+      if (!active) return;
+
+      const step = steps[index];
+
+      await ensureStep(step);
+
+      let target =
+        document.querySelector(step.target);
+
+      if (!target) {
+        target =
+          document.querySelector(
+            '#returnSection .section-head'
+          );
+      }
+
+      target.scrollIntoView({
+        behavior:'smooth',
+        block:'center',
+        inline:'center'
+      });
+
+      await sleep(520);
+
+      const rect = target.getBoundingClientRect();
+      const pad = 9;
+
+      const left = Math.max(7, rect.left - pad);
+      const top = Math.max(7, rect.top - pad);
+      const right =
+        Math.min(innerWidth - 7, rect.right + pad);
+      const bottom =
+        Math.min(innerHeight - 7, rect.bottom + pad);
+
+      Object.assign(spotlight.style, {
+        left:left + 'px',
+        top:top + 'px',
+        width:Math.max(36, right - left) + 'px',
+        height:Math.max(36, bottom - top) + 'px'
+      });
+
+      positionFigure(rect);
+
+      const pack = TEXT[language] || TEXT.en;
+      const copy = pack[index] || TEXT.en[index];
+
+      document.getElementById('rtTourTitle')
+        .textContent = copy[0];
+
+      document.getElementById('rtTourCopy')
+        .textContent = copy[1];
+
+      document.getElementById('rtTourCount')
+        .textContent =
+          `${index + 1} / ${steps.length}`;
+
+      document.getElementById('rtTourBack')
+        .disabled = index === 0;
+
+      document.getElementById('rtTourNext')
+        .textContent =
+          index === steps.length - 1
+            ? 'Finish'
+            : 'Next →';
+
+      document.getElementById('rtTourProgress')
+        .innerHTML = steps.map((_, i) =>
+          `<span class="${i <= index ? 'done' : ''}"></span>`
+        ).join('');
+    }
+
+    function openLanguagePicker() {
+      document
+        .getElementById('rtGuideOverlay')
+        ?.classList.remove('show');
+
+      active = false;
+      index = 0;
+
+      layer.classList.add(
+        'show',
+        'language-pick'
+      );
+
+      layer.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+    }
+
+    function begin(lang) {
+      language =
+        ['ms','en','my','zh'].includes(lang)
+          ? lang
+          : 'en';
+
+      active = true;
+      index = 0;
+
+      layer.classList.remove('language-pick');
+
+      renderStep();
+    }
+
+    function closeTour() {
+      active = false;
+
+      layer.classList.remove(
+        'show',
+        'language-pick',
+        'rt-figure-left',
+        'rt-figure-right'
+      );
+
+      layer.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      document
+        .getElementById('rtModal')
+        ?.classList.remove('open');
+
+      const issueBox =
+        document.getElementById('rIssueBox');
+
+      const actualDamaged =
+        [...document.querySelectorAll(
+          '#rItems .cond'
+        )].some(
+          input => input.value === 'Damaged'
+        );
+
+      if (!actualDamaged) {
+        issueBox?.classList.remove('show');
+      }
+    }
+
+    layer
+      .querySelectorAll('[data-rt-lang]')
+      .forEach(btn => {
+        btn.addEventListener('click', () => {
+          begin(btn.dataset.rtLang);
+        });
+      });
+
+    document.getElementById('rtTourLater')
+      .onclick = closeTour;
+
+    document.getElementById('rtTourSkip')
+      .onclick = closeTour;
+
+    document.getElementById('rtTourBack')
+      .onclick = () => {
+        if (index > 0) {
+          index--;
+          renderStep();
+        }
+      };
+
+    document.getElementById('rtTourNext')
+      .onclick = () => {
+        if (index >= steps.length - 1) {
+          closeTour();
+          return;
+        }
+
+        index++;
+        renderStep();
+      };
+
+    window.addEventListener('resize', () => {
+      if (active) renderStep();
+    });
+
+    /* REPLACE OLD TEXT-ONLY GUIDE BUTTON */
+    const guideBtn =
+      document.getElementById('rtGuideBtn');
+
+    if (guideBtn) {
+      guideBtn.className =
+        'btn module-guide-btn';
+
+      guideBtn.textContent =
+        '✦ Return Guide';
+
+      guideBtn.onclick = e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        openLanguagePicker();
+      };
+    }
+  }
+
+  const timer = setInterval(() => {
+    if (document.getElementById('returnSection')) {
+      clearInterval(timer);
+      setupReturnV4();
+    }
+  }, 200);
+
+  setTimeout(() => clearInterval(timer), 10000);
 })();
