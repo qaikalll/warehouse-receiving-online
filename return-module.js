@@ -768,75 +768,99 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         originalFigure.src;
     }
 
-    const TEXT = {
+       const TEXT = {
       en: [
-        ['Return Management',
-          'This module records, inspects and tracks every customer return case.'],
-
-        ['Create a new return case',
-          'Click New Return Case when a returned parcel arrives at the warehouse.'],
-
-        ['Scan the tracking number',
-          'Scan or enter the parcel tracking number. The system will also warn you about possible duplicate returns.'],
-
-        ['Enter the marketplace order',
-          'Enter the Shopee, Lazada or website order ID. Use Can\\'t Track only when the original order cannot be identified.'],
-
-        ['Record the returned item',
-          'Enter the SKU and quantity. Use Add Item when one return parcel contains multiple SKUs.'],
-
-        ['Inspect item condition',
-          'Choose Good or Damaged for each returned item.'],
-
-        ['Record the return issue',
-          'For damaged or abnormal returns, select the correct issue type and add a clear remark.'],
-
-        ['Upload photo evidence',
-          'Attach clear photo evidence for damaged, worn, wrong or abnormal returned items.'],
-
-        ['Choose disposition',
-          'Select the next warehouse action such as Return to Stock, Quarantine or Pending Client Decision.'],
-
-        ['Save or complete',
-          'Use Save Draft while inspection is still ongoing. Complete Return when all information has been confirmed.'],
-
-        ['Track all return cases',
-          'Completed and pending return cases are shown here for tracking, review and export.']
+        [
+          "Return Management",
+          "This module records, inspects and tracks every customer return case."
+        ],
+        [
+          "Create a new return case",
+          "Click New Return Case when a returned parcel arrives at the warehouse."
+        ],
+        [
+          "Scan the tracking number",
+          "Scan or enter the parcel tracking number. The system will also warn you about possible duplicate returns."
+        ],
+        [
+          "Enter the marketplace order",
+          "Enter the Shopee, Lazada or website order ID. Use Can't Track only when the original order cannot be identified."
+        ],
+        [
+          "Record the returned item",
+          "Enter the SKU and quantity. Use Add Item when one return parcel contains multiple SKUs."
+        ],
+        [
+          "Inspect item condition",
+          "Choose Good or Damaged for each returned item."
+        ],
+        [
+          "Record the return issue",
+          "For damaged or abnormal returns, select the correct issue type and add a clear remark."
+        ],
+        [
+          "Upload photo evidence",
+          "Attach clear photo evidence for damaged, worn, wrong or abnormal returned items."
+        ],
+        [
+          "Choose disposition",
+          "Select the next warehouse action such as Return to Stock, Quarantine or Pending Client Decision."
+        ],
+        [
+          "Save or complete",
+          "Use Save Draft while inspection is still ongoing. Complete Return when all information has been confirmed."
+        ],
+        [
+          "Track all return cases",
+          "Completed and pending return cases are shown here for tracking, review and export."
+        ]
       ],
 
       ms: [
-        ['Return Management',
-          'Modul ini digunakan untuk merekod, memeriksa dan menjejak setiap kes return customer.'],
-
-        ['Buka kes return baru',
-          'Tekan New Return Case apabila parcel return sampai ke warehouse.'],
-
-        ['Scan tracking number',
-          'Scan atau masukkan tracking parcel. Sistem juga akan beri amaran jika tracking yang sama pernah direkod.'],
-
-        ['Masukkan marketplace order',
-          'Masukkan Order ID Shopee, Lazada atau website. Gunakan Can\\'t Track hanya jika order asal memang tidak dapat dikenal pasti.'],
-
-        ['Rekod item yang dipulangkan',
-          'Masukkan SKU dan quantity. Tekan Add Item jika satu parcel mempunyai lebih daripada satu SKU.'],
-
-        ['Periksa keadaan item',
-          'Pilih Good atau Damaged untuk setiap item yang dipulangkan.'],
-
-        ['Rekod isu return',
-          'Untuk item rosak atau bermasalah, pilih Issue Type yang betul dan masukkan remark.'],
-
-        ['Upload bukti gambar',
-          'Lampirkan gambar yang jelas untuk barang rosak, worn, salah atau keadaan luar biasa.'],
-
-        ['Pilih disposition',
-          'Pilih tindakan seterusnya seperti Return to Stock, Quarantine atau Pending Client Decision.'],
-
-        ['Simpan atau complete',
-          'Gunakan Save Draft jika pemeriksaan belum selesai. Tekan Complete Return apabila semua maklumat telah disahkan.'],
-
-        ['Track semua return',
-          'Semua return yang pending atau completed boleh disemak dan diexport di bahagian ini.']
+        [
+          "Return Management",
+          "Modul ini digunakan untuk merekod, memeriksa dan menjejak setiap kes return customer."
+        ],
+        [
+          "Buka kes return baru",
+          "Tekan New Return Case apabila parcel return sampai ke warehouse."
+        ],
+        [
+          "Scan tracking number",
+          "Scan atau masukkan tracking parcel. Sistem juga akan beri amaran jika tracking yang sama pernah direkod."
+        ],
+        [
+          "Masukkan marketplace order",
+          "Masukkan Order ID Shopee, Lazada atau website. Gunakan Can't Track hanya jika order asal memang tidak dapat dikenal pasti."
+        ],
+        [
+          "Rekod item yang dipulangkan",
+          "Masukkan SKU dan quantity. Tekan Add Item jika satu parcel mempunyai lebih daripada satu SKU."
+        ],
+        [
+          "Periksa keadaan item",
+          "Pilih Good atau Damaged untuk setiap item yang dipulangkan."
+        ],
+        [
+          "Rekod isu return",
+          "Untuk item rosak atau bermasalah, pilih Issue Type yang betul dan masukkan remark."
+        ],
+        [
+          "Upload bukti gambar",
+          "Lampirkan gambar yang jelas untuk barang rosak, worn, salah atau keadaan luar biasa."
+        ],
+        [
+          "Pilih disposition",
+          "Pilih tindakan seterusnya seperti Return to Stock, Quarantine atau Pending Client Decision."
+        ],
+        [
+          "Simpan atau complete",
+          "Gunakan Save Draft jika pemeriksaan belum selesai. Tekan Complete Return apabila semua maklumat telah disahkan."
+        ],
+        [
+          "Track semua return",
+          "Semua return yang pending atau completed boleh disemak dan diexport di bahagian ini."
+        ]
       ]
     };
 
