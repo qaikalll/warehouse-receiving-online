@@ -874,7 +874,7 @@
     const textPack=group==='booking'?(TUTORIAL_BOOKING_V6[tutorialLanguage]||TUTORIAL_BOOKING_V6.en):(languagePack[group]||TUTORIAL_TEXT.en[group]||TUTORIAL_TEXT.en.general);
     const specialPack=(TUTORIAL_SPECIAL_TEXT[tutorialLanguage]||TUTORIAL_SPECIAL_TEXT.en);
     return blueprint.map((step,index)=>{
-      const pair=step.tutorialKey ? (specialPack[step.tutorialKey]||TUTORIAL_SPECIAL_TEXT.en[step.tutorialKey]) : (textPack[index]||TUTORIAL_TEXT.en.general[0]);
+      const textIndex=blueprint.slice(0,index+1).filter(s=>!s.tutorialKey).length-1,pair=step.tutorialKey?(specialPack[step.tutorialKey]||TUTORIAL_SPECIAL_TEXT.en[step.tutorialKey]):(textPack[textIndex]||TUTORIAL_TEXT.en.general[0]);
       return Object.assign({},step,{title:String(pair[0]).replace('{user}',currentUser?.username||'team'),copy:String(pair[1]).replace('{user}',currentUser?.username||'team')});
     });
   }
