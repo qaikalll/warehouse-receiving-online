@@ -897,12 +897,22 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       }
     ];
 
-    let index = 0;
+      let index = 0;
     let language = 'en';
     let active = false;
 
+    let tourStartX = 0;
+    let tourStartY = 0;
+
     const spotlight =
       document.getElementById('rtTourSpotlight');
+
+    const tourDialog =
+      layer.querySelector('.tutorial-dialog');
+
+    const figureWrap =
+      layer.querySelector('.tutorial-guide-wrap');
+
 
     async function ensureStep(step) {
 
@@ -912,10 +922,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
       await sleep(140);
 
-      /*
-       * Once guide reaches form fields,
-       * automatically open New Return.
-       */
+
+      /* OPEN RETURN FORM AUTOMATICALLY */
+
       if (step.modal) {
 
         const modal =
@@ -931,31 +940,68 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         }
       }
 
-      /*
-       * Show damaged-return fields when guide
-       * reaches Issue / Photo steps.
-       */
+
+      /* SHOW ISSUE SECTION ONLY WHEN NEEDED */
+
       if (step.issue) {
 
         document
           .getElementById('rIssueBox')
           ?.classList.add('show');
+
+      } else if (index < 10) {
+
+        const actuallyDamaged =
+          [...document.querySelectorAll(
+            '#rItems .cond'
+          )].some(
+            input => input.value === 'Damaged'
+          );
+
+        if (!actuallyDamaged) {
+
+          document
+            .getElementById('rIssueBox')
+            ?.classList.remove('show');
+        }
       }
 
-      /*
-       * Final step returns to the saved-case list.
-       */
+
+      /* FINAL STEP RETURNS TO RETURN LIST */
+
       if (step.closeModal) {
 
         document
           .getElementById('rtModal')
           ?.classList.remove('open');
 
-        await sleep(220);
+        await sleep(260);
       }
     }
 
+
+    function clearDialogPosition() {
+
+      if (!tourDialog) return;
+
+      [
+        'left',
+        'right',
+        'top',
+        'bottom',
+        'width'
+      ].forEach(property => {
+        tourDialog.style.removeProperty(property);
+      });
+    }
+
+
     function positionFigure(rect) {
+
+      if (!tourDialog) return;
+
+
+      /* MOBILE USES ORIGINAL RESPONSIVE POSITION */
 
       if (innerWidth <= 680) {
 
@@ -964,17 +1010,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           'rt-figure-right'
         );
 
+        clearDialogPosition();
+
+        figureWrap?.style.removeProperty('opacity');
+
         return;
       }
 
+
+      const targetCenterX =
+        rect.left + rect.width / 2;
+
       const targetIsRight =
-        rect.left + rect.width / 2 >
-        innerWidth / 2;
+        targetCenterX > innerWidth / 2;
+
 
       /*
-       * Figure moves away from the highlighted
-       * element just like the existing guides.
+       * CHARACTER MOVES AWAY FROM TARGET
        */
+
       layer.classList.toggle(
         'rt-figure-left',
         targetIsRight
@@ -984,18 +1038,259 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         'rt-figure-right',
         !targetIsRight
       );
+
+
+      /*
+       * DIALOG MUST NEVER COVER
+       * THE FIELD BEING EXPLAINED
+       */
+
+      const safe = 20;
+      const gap = 24;
+
+      const maxDialogWidth =
+        Math.min(
+          500,
+          innerWidth - 40
+        );
+
+      const leftRoom =
+        rect.left - gap - safe;
+
+      const rightRoom =
+        innerWidth -
+        rect.right -
+        gap -
+        safe;
+
+      const dialogHeight =
+        tourDialog.offsetHeight || 280;
+
+
+      const setDialog = (property, value) => {
+
+        tourDialog.style.setProperty(
+          property,
+          value,
+          'important'
+        );
+      };
+
+
+      /*
+       * TARGET ON RIGHT:
+       * PLACE TEXT BOX ON LEFT
+       */
+
+      if (leftRoom >= 340) {
+
+        const width =
+          Math.min(
+            maxDialogWidth,
+            leftRoom
+          );
+
+        const left =
+          Math.max(
+            safe,
+            rect.left -
+            gap -
+            width
+          );
+
+        setDialog(
+          'width',
+          `${width}px`
+        );
+
+        setDialog(
+          'left',
+          `${left}px`
+        );
+
+        setDialog(
+          'right',
+          'auto'
+        );
+
+        setDialog(
+          'top',
+          'auto'
+        );
+
+        setDialog(
+          'bottom',
+          `${safe}px`
+        );
+
+
+      /*
+       * TARGET ON LEFT:
+       * PLACE TEXT BOX ON RIGHT
+       */
+
+      } else if (rightRoom >= 340) {
+
+        const width =
+          Math.min(
+            maxDialogWidth,
+            rightRoom
+          );
+
+        const left =
+          Math.min(
+            innerWidth -
+            width -
+            safe,
+
+            rect.right + gap
+          );
+
+        setDialog(
+          'width',
+          `${width}px`
+        );
+
+        setDialog(
+          'left',
+          `${left}px`
+        );
+
+        setDialog(
+          'right',
+          'auto'
+        );
+
+        setDialog(
+          'top',
+          'auto'
+        );
+
+        setDialog(
+          'bottom',
+          `${safe}px`
+        );
+
+
+      /*
+       * WIDE TARGET:
+       * MOVE DIALOG ABOVE OR BELOW
+       */
+
+      } else {
+
+        const width =
+          Math.min(
+            440,
+            innerWidth - 40
+          );
+
+        setDialog(
+          'width',
+          `${width}px`
+        );
+
+        setDialog(
+          'left',
+          `${Math.max(
+            safe,
+            (innerWidth - width) / 2
+          )}px`
+        );
+
+        setDialog(
+          'right',
+          'auto'
+        );
+
+
+        const roomAbove =
+          rect.top;
+
+        const roomBelow =
+          innerHeight - rect.bottom;
+
+
+        if (roomAbove > roomBelow) {
+
+          setDialog(
+            'top',
+            'auto'
+          );
+
+          setDialog(
+            'bottom',
+            `${Math.max(
+              safe,
+              innerHeight -
+              rect.top +
+              gap
+            )}px`
+          );
+
+        } else {
+
+          let nextTop =
+            rect.bottom + gap;
+
+          nextTop =
+            Math.min(
+              nextTop,
+              innerHeight -
+              dialogHeight -
+              safe
+            );
+
+          setDialog(
+            'top',
+            `${Math.max(
+              safe,
+              nextTop
+            )}px`
+          );
+
+          setDialog(
+            'bottom',
+            'auto'
+          );
+        }
+      }
+
+
+      /*
+       * IF SCREEN SPACE IS TIGHT,
+       * CHARACTER BECOMES SLIGHTLY SOFTER
+       * SO TEXT REMAINS CLEAR.
+       */
+
+      if (figureWrap) {
+
+        figureWrap.style.opacity =
+          (
+            leftRoom < 340 &&
+            rightRoom < 340
+          )
+            ? '.78'
+            : '1';
+      }
     }
+
 
     async function renderStep() {
 
       if (!active) return;
 
-      const step = steps[index];
+      const step =
+        steps[index];
 
       await ensureStep(step);
 
+
       let target =
-        document.querySelector(step.target);
+        document.querySelector(
+          step.target
+        );
+
 
       if (!target) {
 
@@ -1005,28 +1300,108 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           );
       }
 
+
       /*
-       * Automatically move the page / form
-       * to the field currently being explained.
+       * IMPORTANT:
+       *
+       * RETURN FORM IS A FIXED RIGHT PANEL.
+       *
+       * SCROLL ONLY THE PANEL.
+       * DO NOT MOVE THE WHOLE PAGE SIDEWAYS.
        */
-      target.scrollIntoView({
-        behavior:'smooth',
-        block:'center',
-        inline:'center'
-      });
+
+      const panel =
+        target.closest('.rt-panel');
+
+
+      if (panel) {
+
+        const panelRect =
+          panel.getBoundingClientRect();
+
+        const targetRect =
+          target.getBoundingClientRect();
+
+
+        const nextTop =
+          panel.scrollTop +
+          (
+            targetRect.top -
+            panelRect.top
+          ) -
+          (
+            panel.clientHeight / 2 -
+            targetRect.height / 2
+          );
+
+
+        panel.scrollTo({
+          top:
+            Math.max(
+              0,
+              nextTop
+            ),
+
+          left:0,
+
+          behavior:'smooth'
+        });
+
+
+        /*
+         * KEEP BACKGROUND PAGE LOCKED
+         * WHILE RETURN PANEL IS OPEN
+         */
+
+        window.scrollTo({
+          left:tourStartX,
+          top:tourStartY,
+          behavior:'auto'
+        });
+
+      } else {
+
+        target.scrollIntoView({
+          behavior:'smooth',
+          block:'center'
+        });
+      }
+
 
       await sleep(560);
+
+
+      /*
+       * NEVER ALLOW HORIZONTAL PAGE SHIFT
+       */
+
+      window.scrollTo({
+        left:tourStartX,
+        top:window.scrollY,
+        behavior:'auto'
+      });
+
 
       const rect =
         target.getBoundingClientRect();
 
+
       const pad = 10;
 
+
       const left =
-        Math.max(7, rect.left - pad);
+        Math.max(
+          7,
+          rect.left - pad
+        );
+
 
       const top =
-        Math.max(7, rect.top - pad);
+        Math.max(
+          7,
+          rect.top - pad
+        );
+
 
       const right =
         Math.min(
@@ -1034,21 +1409,27 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           rect.right + pad
         );
 
+
       const bottom =
         Math.min(
           innerHeight - 7,
           rect.bottom + pad
         );
 
+
       /*
-       * Move the glowing spotlight
-       * to the exact Return field.
+       * MOVE SPOTLIGHT TO CURRENT FIELD
        */
+
       Object.assign(
         spotlight.style,
         {
-          left:left + 'px',
-          top:top + 'px',
+          left:
+            left + 'px',
+
+          top:
+            top + 'px',
+
           width:
             Math.max(
               36,
@@ -1063,45 +1444,72 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         }
       );
 
+
+      /*
+       * POSITION CHARACTER + DIALOG
+       * WITHOUT COVERING TARGET
+       */
+
       positionFigure(rect);
+
 
       const pack =
         TEXT[language] ||
         TEXT.en;
 
+
       const copy =
         pack[index] ||
         TEXT.en[index];
 
+
       document
-        .getElementById('rtTourTitle')
+        .getElementById(
+          'rtTourTitle'
+        )
         .textContent =
           copy[0];
 
+
       document
-        .getElementById('rtTourCopy')
+        .getElementById(
+          'rtTourCopy'
+        )
         .textContent =
           copy[1];
 
+
       document
-        .getElementById('rtTourCount')
+        .getElementById(
+          'rtTourCount'
+        )
         .textContent =
           `${index + 1} / ${steps.length}`;
 
+
       document
-        .getElementById('rtTourBack')
+        .getElementById(
+          'rtTourBack'
+        )
         .disabled =
           index === 0;
 
+
       document
-        .getElementById('rtTourNext')
+        .getElementById(
+          'rtTourNext'
+        )
         .textContent =
-          index === steps.length - 1
+          index ===
+          steps.length - 1
             ? 'Finish'
             : 'Next →';
 
+
       document
-        .getElementById('rtTourProgress')
+        .getElementById(
+          'rtTourProgress'
+        )
         .innerHTML =
           steps
             .map(
@@ -1115,18 +1523,30 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
             .join('');
     }
 
+
     function openLanguagePicker() {
-      document
-        .getElementById('rtGuideOverlay')
-        ?.classList.remove('show');
+
+      /*
+       * SAVE ORIGINAL PAGE POSITION
+       */
+
+      tourStartX =
+        window.scrollX;
+
+      tourStartY =
+        window.scrollY;
+
 
       active = false;
+
       index = 0;
+
 
       layer.classList.add(
         'show',
         'language-pick'
       );
+
 
       layer.setAttribute(
         'aria-hidden',
@@ -1134,22 +1554,38 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       );
     }
 
+
     function begin(lang) {
+
       language =
-        ['ms','en','my','zh'].includes(lang)
-          ? lang
-          : 'en';
+        ['ms','en','my','zh']
+          .includes(lang)
+            ? lang
+            : 'en';
+
 
       active = true;
+
       index = 0;
 
-      layer.classList.remove('language-pick');
+
+      layer.classList.remove(
+        'language-pick'
+      );
+
 
       renderStep();
     }
 
+
     function closeTour() {
+
       active = false;
+
+
+      /*
+       * CLOSE GUIDE COMPLETELY
+       */
 
       layer.classList.remove(
         'show',
@@ -1158,28 +1594,110 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         'rt-figure-right'
       );
 
+
       layer.setAttribute(
         'aria-hidden',
         'true'
       );
 
+
+      /*
+       * CLOSE RETURN PANEL
+       */
+
       document
         .getElementById('rtModal')
         ?.classList.remove('open');
 
+
+      /*
+       * RESET RETURN PANEL SCROLL
+       */
+
+      const panel =
+        document.querySelector(
+          '#rtModal .rt-panel'
+        );
+
+
+      if (panel) {
+
+        panel.scrollTo({
+          top:0,
+          left:0,
+          behavior:'auto'
+        });
+      }
+
+
+      /*
+       * REMOVE TEMPORARY ISSUE SECTION
+       */
+
       const issueBox =
-        document.getElementById('rIssueBox');
+        document.getElementById(
+          'rIssueBox'
+        );
+
 
       const actualDamaged =
         [...document.querySelectorAll(
           '#rItems .cond'
         )].some(
-          input => input.value === 'Damaged'
+          input =>
+            input.value === 'Damaged'
         );
 
+
       if (!actualDamaged) {
-        issueBox?.classList.remove('show');
+
+        issueBox
+          ?.classList
+          .remove('show');
       }
+
+
+      /*
+       * RESET GUIDE VISUAL POSITION
+       */
+
+      spotlight
+        ?.removeAttribute('style');
+
+
+      clearDialogPosition();
+
+
+      figureWrap
+        ?.style
+        .removeProperty('opacity');
+
+
+      /*
+       * RESTORE ORIGINAL SCREEN
+       * SO PAGE NEVER ENDS HALF-SCROLLED
+       */
+
+      requestAnimationFrame(() => {
+
+        window.scrollTo({
+          left:tourStartX,
+          top:tourStartY,
+          behavior:'auto'
+        });
+
+
+        document
+          .documentElement
+          .scrollLeft =
+            tourStartX;
+
+
+        document
+          .body
+          .scrollLeft =
+            tourStartX;
+      });
     }
 
     layer
