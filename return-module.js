@@ -768,98 +768,143 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         originalFigure.src;
     }
 
-       const TEXT = {
+           /* ===== RETURN INTERACTIVE GUIDE V5 ===== */
+
+    /* Tutorial must sit ABOVE the New Return modal */
+    layer.style.zIndex = '30000';
+
+    const TEXT = {
       en: [
         [
           "Return Management",
-          "This module records, inspects and tracks every customer return case."
+          "This guide will show the complete return process step by step directly on the Return screen."
         ],
         [
-          "Create a new return case",
-          "Click New Return Case when a returned parcel arrives at the warehouse."
+          "Start a New Return",
+          "Click New Return Case whenever a returned parcel arrives. On the next step, the guide will open the form for you."
         ],
         [
-          "Scan the tracking number",
-          "Scan or enter the parcel tracking number. The system will also warn you about possible duplicate returns."
+          "Confirm Return Date",
+          "Check the return date. The system automatically uses today's date, but you can change it when required."
         ],
         [
-          "Enter the marketplace order",
-          "Enter the Shopee, Lazada or website order ID. Use Can't Track only when the original order cannot be identified."
+          "Choose Platform",
+          "Select where the order came from such as Shopee, Lazada, Website or Others."
         ],
         [
-          "Record the returned item",
-          "Enter the SKU and quantity. Use Add Item when one return parcel contains multiple SKUs."
+          "Scan Tracking Number",
+          "Scan or enter the parcel tracking number. Tracking is the main reference for tracing the return and detecting duplicates."
         ],
         [
-          "Inspect item condition",
-          "Choose Good or Damaged for each returned item."
+          "Marketplace Order ID",
+          "Enter the original marketplace Order ID. Use Can't Track only when the original order cannot be identified."
         ],
         [
-          "Record the return issue",
-          "For damaged or abnormal returns, select the correct issue type and add a clear remark."
+          "Client Return ID",
+          "If the client provides a return reference such as ST0885, enter it here. Leave it blank when there is no client reference."
         ],
         [
-          "Upload photo evidence",
-          "Attach clear photo evidence for damaged, worn, wrong or abnormal returned items."
+          "Enter Returned SKU",
+          "Enter the SKU or item code being returned. Use Add Item when one parcel contains more than one SKU."
         ],
         [
-          "Choose disposition",
-          "Select the next warehouse action such as Return to Stock, Quarantine or Pending Client Decision."
+          "Enter Quantity",
+          "Enter the actual quantity returned for this SKU."
         ],
         [
-          "Save or complete",
-          "Use Save Draft while inspection is still ongoing. Complete Return when all information has been confirmed."
+          "Inspect Item Condition",
+          "Choose Good if the item is acceptable, or Damaged if the item is damaged, wrong, worn or has another issue."
         ],
         [
-          "Track all return cases",
-          "Completed and pending return cases are shown here for tracking, review and export."
+          "Record the Issue",
+          "For damaged or abnormal returns, choose the correct Issue Type and enter a clear remark."
+        ],
+        [
+          "Upload Photo Evidence",
+          "Upload clear photo evidence for damaged, worn, wrong or abnormal returned items."
+        ],
+        [
+          "Choose Disposition",
+          "Choose the next warehouse action such as Return to Stock, Quarantine, Return to Client or Pending Client Decision."
+        ],
+        [
+          "Set Return Status",
+          "Use Pending Inspection while checking, Pending Client Decision when waiting for instruction, or Completed when the case is finished."
+        ],
+        [
+          "Save or Complete",
+          "Use Save Draft when checking is still ongoing. Use Complete Return only after all return information has been confirmed."
+        ],
+        [
+          "Track Saved Returns",
+          "The saved return appears in the Return Cases table where you can review, edit, track and export the case."
         ]
       ],
 
       ms: [
         [
           "Return Management",
-          "Modul ini digunakan untuk merekod, memeriksa dan menjejak setiap kes return customer."
+          "Guide ini akan tunjuk keseluruhan proses return satu per satu terus pada skrin Return sebenar."
         ],
         [
-          "Buka kes return baru",
-          "Tekan New Return Case apabila parcel return sampai ke warehouse."
+          "Buka New Return",
+          "Tekan New Return Case setiap kali parcel return sampai. Pada step seterusnya guide akan buka form return secara automatik."
         ],
         [
-          "Scan tracking number",
-          "Scan atau masukkan tracking parcel. Sistem juga akan beri amaran jika tracking yang sama pernah direkod."
+          "Semak Tarikh Return",
+          "Semak tarikh return dahulu. Sistem akan isi tarikh hari ini secara automatik tetapi boleh diubah jika perlu."
         ],
         [
-          "Masukkan marketplace order",
-          "Masukkan Order ID Shopee, Lazada atau website. Gunakan Can't Track hanya jika order asal memang tidak dapat dikenal pasti."
+          "Pilih Platform",
+          "Pilih order ini datang daripada platform mana seperti Shopee, Lazada, Website atau Others."
         ],
         [
-          "Rekod item yang dipulangkan",
-          "Masukkan SKU dan quantity. Tekan Add Item jika satu parcel mempunyai lebih daripada satu SKU."
+          "Scan Tracking Number",
+          "Scan atau masukkan tracking parcel. Tracking ialah rujukan utama untuk trace return dan mengesan duplicate."
         ],
         [
-          "Periksa keadaan item",
-          "Pilih Good atau Damaged untuk setiap item yang dipulangkan."
+          "Marketplace Order ID",
+          "Masukkan Order ID asal. Gunakan Can't Track hanya jika order asal memang tidak dapat dikenal pasti."
         ],
         [
-          "Rekod isu return",
-          "Untuk item rosak atau bermasalah, pilih Issue Type yang betul dan masukkan remark."
+          "Client Return ID",
+          "Jika client beri reference return seperti ST0885, masukkan di sini. Biarkan kosong jika tiada reference."
         ],
         [
-          "Upload bukti gambar",
-          "Lampirkan gambar yang jelas untuk barang rosak, worn, salah atau keadaan luar biasa."
+          "Masukkan SKU Return",
+          "Masukkan SKU atau item code yang dipulangkan. Tekan Add Item jika satu parcel mempunyai lebih daripada satu SKU."
         ],
         [
-          "Pilih disposition",
-          "Pilih tindakan seterusnya seperti Return to Stock, Quarantine atau Pending Client Decision."
+          "Masukkan Quantity",
+          "Masukkan quantity sebenar item yang dipulangkan."
         ],
         [
-          "Simpan atau complete",
-          "Gunakan Save Draft jika pemeriksaan belum selesai. Tekan Complete Return apabila semua maklumat telah disahkan."
+          "Periksa Condition Item",
+          "Pilih Good jika item elok, atau Damaged jika item rosak, salah item, sudah dipakai atau mempunyai isu lain."
         ],
         [
-          "Track semua return",
-          "Semua return yang pending atau completed boleh disemak dan diexport di bahagian ini."
+          "Rekod Issue",
+          "Jika return rosak atau abnormal, pilih Issue Type yang betul dan masukkan remark yang jelas."
+        ],
+        [
+          "Upload Bukti Gambar",
+          "Upload gambar yang jelas untuk return rosak, worn, salah item atau abnormal."
+        ],
+        [
+          "Pilih Disposition",
+          "Pilih tindakan warehouse seterusnya seperti Return to Stock, Quarantine, Return to Client atau Pending Client Decision."
+        ],
+        [
+          "Tetapkan Status Return",
+          "Gunakan Pending Inspection semasa checking, Pending Client Decision jika tunggu arahan client, atau Completed apabila kes selesai."
+        ],
+        [
+          "Save atau Complete",
+          "Gunakan Save Draft jika checking belum selesai. Tekan Complete Return hanya selepas semua maklumat disahkan."
+        ],
+        [
+          "Track Return",
+          "Return yang disimpan akan keluar dalam Return Cases table untuk review, edit, track dan export."
         ]
       ]
     };
@@ -869,16 +914,39 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     const steps = [
       { target:'#returnSection .section-head' },
+
       { target:'#rtNew' },
+
+      { target:'#rDate', modal:true },
+
+      { target:'#rPlatform', modal:true },
+
       { target:'#rTracking', modal:true },
+
       { target:'#rOrder', modal:true },
-      { target:'#rItems', modal:true },
+
+      { target:'#rClient', modal:true },
+
+      { target:'#rItems .sku', modal:true },
+
+      { target:'#rItems .qty', modal:true },
+
       { target:'#rItems .rt-cond', modal:true },
-      { target:'#rIssueBox', modal:true, issue:true },
+
+      { target:'#rIssue', modal:true, issue:true },
+
       { target:'#rPhoto', modal:true, issue:true },
+
       { target:'#rDisposition', modal:true },
+
+      { target:'#rStatus', modal:true },
+
       { target:'#rtForm .rt-buttons', modal:true },
-      { target:'#returnSection .table-card', closeModal:true }
+
+      {
+        target:'#returnSection .table-card',
+        closeModal:true
+      }
     ];
 
     let index = 0;
@@ -888,49 +956,66 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const spotlight =
       document.getElementById('rtTourSpotlight');
 
-    const guide =
-      layer.querySelector('.tutorial-guide-wrap');
-
-    const dialog =
-      layer.querySelector('.tutorial-dialog');
-
     async function ensureStep(step) {
+
       document
         .querySelector('.nav-btn[data-section="return"]')
         ?.click();
 
-      await sleep(120);
+      await sleep(140);
 
+      /*
+       * Once guide reaches form fields,
+       * automatically open New Return.
+       */
       if (step.modal) {
-        const modal = document.getElementById('rtModal');
+
+        const modal =
+          document.getElementById('rtModal');
 
         if (!modal?.classList.contains('open')) {
-          document.getElementById('rtNew')?.click();
-          await sleep(250);
+
+          document
+            .getElementById('rtNew')
+            ?.click();
+
+          await sleep(320);
         }
       }
 
+      /*
+       * Show damaged-return fields when guide
+       * reaches Issue / Photo steps.
+       */
       if (step.issue) {
+
         document
           .getElementById('rIssueBox')
           ?.classList.add('show');
       }
 
+      /*
+       * Final step returns to the saved-case list.
+       */
       if (step.closeModal) {
+
         document
           .getElementById('rtModal')
           ?.classList.remove('open');
 
-        await sleep(180);
+        await sleep(220);
       }
     }
 
     function positionFigure(rect) {
+
       if (innerWidth <= 680) {
+
         layer.classList.remove(
           'rt-figure-left',
           'rt-figure-right'
         );
+
         return;
       }
 
@@ -938,6 +1023,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         rect.left + rect.width / 2 >
         innerWidth / 2;
 
+      /*
+       * Figure moves away from the highlighted
+       * element just like the existing guides.
+       */
       layer.classList.toggle(
         'rt-figure-left',
         targetIsRight
@@ -950,6 +1039,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }
 
     async function renderStep() {
+
       if (!active) return;
 
       const step = steps[index];
@@ -960,65 +1050,121 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         document.querySelector(step.target);
 
       if (!target) {
+
         target =
           document.querySelector(
             '#returnSection .section-head'
           );
       }
 
+      /*
+       * Automatically move the page / form
+       * to the field currently being explained.
+       */
       target.scrollIntoView({
         behavior:'smooth',
         block:'center',
         inline:'center'
       });
 
-      await sleep(520);
+      await sleep(560);
 
-      const rect = target.getBoundingClientRect();
-      const pad = 9;
+      const rect =
+        target.getBoundingClientRect();
 
-      const left = Math.max(7, rect.left - pad);
-      const top = Math.max(7, rect.top - pad);
+      const pad = 10;
+
+      const left =
+        Math.max(7, rect.left - pad);
+
+      const top =
+        Math.max(7, rect.top - pad);
+
       const right =
-        Math.min(innerWidth - 7, rect.right + pad);
-      const bottom =
-        Math.min(innerHeight - 7, rect.bottom + pad);
+        Math.min(
+          innerWidth - 7,
+          rect.right + pad
+        );
 
-      Object.assign(spotlight.style, {
-        left:left + 'px',
-        top:top + 'px',
-        width:Math.max(36, right - left) + 'px',
-        height:Math.max(36, bottom - top) + 'px'
-      });
+      const bottom =
+        Math.min(
+          innerHeight - 7,
+          rect.bottom + pad
+        );
+
+      /*
+       * Move the glowing spotlight
+       * to the exact Return field.
+       */
+      Object.assign(
+        spotlight.style,
+        {
+          left:left + 'px',
+          top:top + 'px',
+          width:
+            Math.max(
+              36,
+              right - left
+            ) + 'px',
+
+          height:
+            Math.max(
+              36,
+              bottom - top
+            ) + 'px'
+        }
+      );
 
       positionFigure(rect);
 
-      const pack = TEXT[language] || TEXT.en;
-      const copy = pack[index] || TEXT.en[index];
+      const pack =
+        TEXT[language] ||
+        TEXT.en;
 
-      document.getElementById('rtTourTitle')
-        .textContent = copy[0];
+      const copy =
+        pack[index] ||
+        TEXT.en[index];
 
-      document.getElementById('rtTourCopy')
-        .textContent = copy[1];
+      document
+        .getElementById('rtTourTitle')
+        .textContent =
+          copy[0];
 
-      document.getElementById('rtTourCount')
+      document
+        .getElementById('rtTourCopy')
+        .textContent =
+          copy[1];
+
+      document
+        .getElementById('rtTourCount')
         .textContent =
           `${index + 1} / ${steps.length}`;
 
-      document.getElementById('rtTourBack')
-        .disabled = index === 0;
+      document
+        .getElementById('rtTourBack')
+        .disabled =
+          index === 0;
 
-      document.getElementById('rtTourNext')
+      document
+        .getElementById('rtTourNext')
         .textContent =
           index === steps.length - 1
             ? 'Finish'
             : 'Next →';
 
-      document.getElementById('rtTourProgress')
-        .innerHTML = steps.map((_, i) =>
-          `<span class="${i <= index ? 'done' : ''}"></span>`
-        ).join('');
+      document
+        .getElementById('rtTourProgress')
+        .innerHTML =
+          steps
+            .map(
+              (_, i) =>
+                `<span class="${
+                  i <= index
+                    ? 'done'
+                    : ''
+                }"></span>`
+            )
+            .join('');
     }
 
     function openLanguagePicker() {
