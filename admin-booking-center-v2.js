@@ -175,7 +175,7 @@
       $('bookingAdminRange').addEventListener('change',e=>{state.filters.range=e.target.value;renderCenter()});
       $('bookingAdminStatus').addEventListener('change',e=>{state.filters.status=e.target.value;renderCenter()});
       $('bookingAdminCompany').addEventListener('change',e=>{state.filters.company=e.target.value;renderCenter()});
-      $('bookingAdminRefresh').addEventListener('click',()=>{renderCenter();showLiveToast(null,'Booking list refreshed','Live data is already synced from Firestore.')});
+      $('bookingAdminRefresh').addEventListener('click',()=>{renderCenter();showLiveToast(null,'Booking list refreshed','Live data is already synced from Firestore.')});$('bookingAdminNewBooking').addEventListener('click',()=>{if(!state.admin)return;document.querySelector('.nav-btn[data-section="booking"]')?.click();});
       $('bookingAdminList').addEventListener('click',e=>{const b=e.target.closest('[data-open-receiving]');if(b){markRead(b.dataset.openReceiving);openReceiving(b.dataset.openReceiving)}});
     }
   }
