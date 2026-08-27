@@ -1,0 +1,6 @@
+GI Return Module CLEAN V1
+Verified 2026-08-27
+- return-module.js: JavaScript syntax check PASSED
+- sw.js: JavaScript syntax check PASSED
+- return-module.css: brace/structure check PASSED
+- UTF-8 / LF normalized
