@@ -7,6 +7,7 @@
   const OLD_TOKEN_KEY='wrs_fcm_token_v1';
   const PUSH_APP_NAME='wrs-push-v12';
   const AUTO_PUSH_WORKER_URL='https://warehouse-booking-push.ednvines.workers.dev/notify-booking';
+  const PINNED_ROLE_BY_EMAIL=Object.freeze({'ednvines@gmail.com':'admin','zamanshari7733@gmail.com':'admin','staff@warehouse-client.com':'staff'});
 
   const FIREBASE_CONFIG={
     apiKey:'AIzaSyAGDRTLXWaCWZpNdqA8KIBoUYJWBEq8qFM',
@@ -98,8 +99,10 @@
     }catch(e){}
 
     const email=String(user?.email||'').toLowerCase();
-    if(!profile.role && email==='ednvines@gmail.com')profile.role='admin';
-    if(!profile.role && email==='staff@warehouse-client.com')profile.role='staff';
+    const pinnedRole=PINNED_ROLE_BY_EMAIL[email]||'';
+    if(pinnedRole){profile.role=pinnedRole;profile.companyId='ALL';profile.companyName='All Companies';}
+    else if(!profile.role && email==='ednvines@gmail.com')profile.role='admin';
+    else if(!profile.role && email==='staff@warehouse-client.com')profile.role='staff';
     if(!profile.displayName)profile.displayName=String(user?.email||'User').split('@')[0];
     return profile;
   }
