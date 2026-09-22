@@ -125,7 +125,7 @@
     const discQ=client?discBase.where('companyId','==',currentUser.companyId):discBase;
     unsubscribeReceiving=recQ.onSnapshot(snap=>{receivingRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Receiving sync error: '+authErrorMessage(e),'warning'));
     unsubscribeDiscrepancy=discQ.onSnapshot(snap=>{discrepancyRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Discrepancy sync error: '+authErrorMessage(e),'warning'));
-    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{accounts=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(a=>a.type!=='company').map(a=>{const pinned=pinnedRoleForEmail(a.email);return pinned?{...a,role:pinned,companyId:ALL_COMPANIES,companyName:'All Companies',roleLocked:true}:a});mergeCompanyNames();renderAccounts();},e=>toast('Account list error: '+authErrorMessage(e),'warning'));
+    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{const raw=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(a=>a.type!=='company');accounts=raw.map(a=>{const pinned=pinnedRoleForEmail(a.email);return pinned?{...a,role:pinned,companyId:ALL_COMPANIES,companyName:'All Companies',roleLocked:true}:a});reconcileProtectedAccountRoles(raw).catch(e=>console.warn('Role reconciliation error:',e?.code||e?.message||e));mergeCompanyNames();renderAccounts();},e=>toast('Account list error: '+authErrorMessage(e),'warning'));
     unsubscribeCompanies=db.collection('companies').onSnapshot(snap=>{onlineCompanies=snap.docs.map(d=>d.data().name||d.id).filter(Boolean);mergeCompanyNames();updateWorkspaceUI();refreshDatalists();},()=>{});
   }
   async function createOnlineAccount(email,password,displayName,role,companyName){
@@ -211,6 +211,52 @@
   }
   function pinnedRoleForEmail(email){
     return PINNED_ROLE_BY_EMAIL[String(email||'').trim().toLowerCase()]||'';
+  }
+  async function reconcileProtectedAccountRoles(rawAccounts=[]){
+    if(!isAdmin()||!currentUser?.email)return;
+    const actor=String(currentUser.email||'').trim().toLowerCase();
+    const jobs=[];
+    for(const account of rawAccounts){
+      const expected=pinnedRoleForEmail(account.email);
+      if(!expected)continue;
+      const currentRole=normalizeRole(account.role||account.userRole);
+      const badCompany=String(account.companyId||'')!==ALL_COMPANIES||String(account.companyName||'')!=='All Companies';
+      if(currentRole===expected&&!badCompany&&account.roleLocked===true)continue;
+      const stamp=nowISO();
+      jobs.push(
+        db.collection('users').doc(account.uid).set({
+          email:String(account.email||'').trim().toLowerCase(),
+          role:expected,
+          companyId:ALL_COMPANIES,
+          companyName:'All Companies',
+          roleLocked:true,
+          roleUpdatedAt:stamp,
+          roleUpdatedBy:actor,
+          updatedAt:stamp,
+          updatedBy:actor
+        },{merge:true}).catch(err=>{
+          console.warn('Protected role reconciliation skipped for',account.email,err?.code||err?.message||err);
+        })
+      );
+    }
+    if(jobs.length)await Promise.all(jobs);
+  }
+  async function updateAccountRoleFromAdmin(account,newRole){
+    if(!isAdmin())throw new Error('Admin access required.');
+    const safeRole=normalizeRole(newRole);
+    if(!safeRole)throw new Error('Invalid role.');
+    const pinned=pinnedRoleForEmail(account.email);
+    if(pinned&&safeRole!==pinned)throw new Error('This protected account role cannot be downgraded.');
+    const role=pinned||safeRole;
+    const currentCompany=account.companyName||companyNameFromId(account.companyId);
+    const companyName=role==='client'?(currentCompany&&currentCompany!=='All Companies'?currentCompany:(COMPANIES[0]||'')):'All Companies';
+    const companyId=role==='client'?companyIdFor(companyName):ALL_COMPANIES;
+    const stamp=nowISO();
+    await db.collection('users').doc(account.uid).set({
+      role,companyId,companyName,roleLocked:true,
+      roleUpdatedAt:stamp,roleUpdatedBy:currentUser.email,
+      updatedAt:stamp,updatedBy:currentUser.email
+    },{merge:true});
   }
   function resolveLoginEmail(value){
     const raw=String(value||'').trim().toLowerCase();
@@ -315,7 +361,7 @@
     if(!isAdmin())return;
     const q=$('accountSearch').value.trim().toLowerCase();
     const rows=accounts.filter(a=>!q||[a.email,a.displayName,a.role,a.companyName,a.companyId].join(' ').toLowerCase().includes(q));
-    $('accountTableBody').innerHTML=rows.length?rows.map(a=>`<tr><td><strong>${esc(a.email||"-")}</strong></td><td>Firebase Auth</td><td>${esc(a.role||"-")}</td><td>${esc(a.role==="client"?(a.companyName||companyNameFromId(a.companyId)):"All Companies")}</td><td>${a.active?"Active":"Disabled"}</td><td><div class="account-tools"><button class="btn btn-sm btn-outline" data-account-action="copy" data-uid="${a.uid}">Copy</button><button class="btn btn-sm btn-secondary" data-account-action="reset" data-uid="${a.uid}">Reset Password</button>${a.uid!==currentUser.uid?`<button class="btn btn-sm ${a.active?"btn-danger":"btn-success"}" data-account-action="toggle" data-uid="${a.uid}">${a.active?"Disable":"Enable"}</button>`:""}</div></td></tr>`).join(''):'<tr><td colspan="6">No accounts found.</td></tr>';
+    $('accountTableBody').innerHTML=rows.length?rows.map(a=>{const pinned=pinnedRoleForEmail(a.email);const role=normalizeRole(a.role)||'client';return `<tr><td><strong>${esc(a.email||"-")}</strong></td><td>Firebase Auth</td><td><div style="display:flex;gap:6px;align-items:center;min-width:170px"><select class="account-role-select" data-uid="${a.uid}" ${pinned?'disabled title="Protected role"':''}><option value="client" ${role==='client'?'selected':''}>Client</option><option value="staff" ${role==='staff'?'selected':''}>Staff</option><option value="admin" ${role==='admin'?'selected':''}>Admin</option></select>${pinned?'<span style="font-size:10px;font-weight:900">LOCKED</span>':`<button class="btn btn-sm btn-outline" data-account-action="save-role" data-uid="${a.uid}">Save Role</button>`}</div></td><td>${esc(role==="client"?(a.companyName||companyNameFromId(a.companyId)):"All Companies")}</td><td>${a.active?"Active":"Disabled"}</td><td><div class="account-tools"><button class="btn btn-sm btn-outline" data-account-action="copy" data-uid="${a.uid}">Copy</button><button class="btn btn-sm btn-secondary" data-account-action="reset" data-uid="${a.uid}">Reset Password</button>${a.uid!==currentUser.uid?`<button class="btn btn-sm ${a.active?"btn-danger":"btn-success"}" data-account-action="toggle" data-uid="${a.uid}">${a.active?"Disable":"Enable"}</button>`:""}</div></td></tr>`}).join(''):'<tr><td colspan="6">No accounts found.</td></tr>';
   }
   function renderCompanyOptions(selectedCompany=activeCompany){
     const workspace=$('companyWorkspace');
@@ -1145,7 +1191,7 @@
 
   async function saveReceivingRecord(record,quiet=false){
     try{await db.collection('receivings').doc(record.id).set({...record,updatedServerAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});if(!quiet)toast($('receivingEditId').value?'Receiving record updated.':'Receiving record saved.');return true;}
-    catch(e){showError('receivingError',authErrorMessage(e));return false;}
+    catch(e){const denied=String(e?.code||'').toLowerCase().includes('permission-denied');const msg=denied&&isEditor()?'Your editor role is not synchronized with Firebase yet. Ask the main admin to open Manage Logins once, then sign out and sign in again.':authErrorMessage(e);showError('receivingError',msg);return false;}
   }
   function resetReceivingForm(){
     $('receivingForm').reset(); $('receivingEditId').value=''; $('recordId').value=newRecordId(); $('shipmentDate').value=todayISO(); $('variance').value='0';
@@ -1641,6 +1687,7 @@
     if(b.dataset.accountAction==='copy'){const text=`Warehouse Receiving Sheet\nEmail: ${acc.email}\nCompany: ${acc.role==="client"?(acc.companyName||companyNameFromId(acc.companyId)):"All Companies"}\nRole: ${acc.role}`;navigator.clipboard?.writeText(text).then(()=>toast('Login information copied.')).catch(()=>prompt('Copy:',text));}
     if(b.dataset.accountAction==='reset'){try{await auth.sendPasswordResetEmail(acc.email);toast('Password reset email sent.');}catch(err){toast(authErrorMessage(err),'warning');}}
     if(b.dataset.accountAction==='toggle'){try{await db.collection('users').doc(acc.uid).update({active:!acc.active,updatedAt:nowISO(),updatedBy:currentUser.email});}catch(err){toast(authErrorMessage(err),'warning');}}
+    if(b.dataset.accountAction==='save-role'){try{const select=$(`.account-role-select[data-uid="${CSS.escape(acc.uid)}"]`);await updateAccountRoleFromAdmin(acc,select?.value||acc.role);toast(`Role updated for ${acc.email}.`,'success');}catch(err){toast(authErrorMessage(err),'warning');}}
   });
 
   applyTheme(currentTheme,false);mergeCompanyNames();updateWorkspaceUI();resetReceivingForm();resetDiscrepancyForm();resetBookingForm();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();
