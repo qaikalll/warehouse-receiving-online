@@ -125,17 +125,20 @@
     const discQ=client?discBase.where('companyId','==',currentUser.companyId):discBase;
     unsubscribeReceiving=recQ.onSnapshot(snap=>{receivingRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Receiving sync error: '+authErrorMessage(e),'warning'));
     unsubscribeDiscrepancy=discQ.onSnapshot(snap=>{discrepancyRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Discrepancy sync error: '+authErrorMessage(e),'warning'));
-    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{accounts=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(a=>a.type!=='company');mergeCompanyNames();renderAccounts();},e=>toast('Account list error: '+authErrorMessage(e),'warning'));
+    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{accounts=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(a=>a.type!=='company').map(a=>{const pinned=pinnedRoleForEmail(a.email);return pinned?{...a,role:pinned,companyId:ALL_COMPANIES,companyName:'All Companies',roleLocked:true}:a});mergeCompanyNames();renderAccounts();},e=>toast('Account list error: '+authErrorMessage(e),'warning'));
     unsubscribeCompanies=db.collection('companies').onSnapshot(snap=>{onlineCompanies=snap.docs.map(d=>d.data().name||d.id).filter(Boolean);mergeCompanyNames();updateWorkspaceUI();refreshDatalists();},()=>{});
   }
   async function createOnlineAccount(email,password,displayName,role,companyName){
     let secondary=null;
     try{
+      const safeRole=normalizeRole(role);
+      if(!safeRole)throw new Error('Please select a valid account role.');
       secondary=firebase.initializeApp(firebaseConfig,'accountCreator-'+Date.now()+'-'+Math.random().toString(36).slice(2));
       const secondaryAuth=secondary.auth();
       const cred=await secondaryAuth.createUserWithEmailAndPassword(email,password);
-      const companyId=role==='client'?companyIdFor(companyName):'ALL';
-      await db.collection('users').doc(cred.user.uid).set({email,displayName,role,companyId,companyName:role==='client'?companyName:'All Companies',active:true,createdAt:nowISO(),createdBy:currentUser?.email||''});
+      const companyId=safeRole==='client'?companyIdFor(companyName):ALL_COMPANIES;
+      const stamp=nowISO();
+      await db.collection('users').doc(cred.user.uid).set({email:String(email||'').trim().toLowerCase(),displayName,role:safeRole,companyId,companyName:safeRole==='client'?companyName:'All Companies',active:true,roleLocked:true,roleUpdatedAt:stamp,roleUpdatedBy:currentUser?.email||'account-creator',createdAt:stamp,createdBy:currentUser?.email||''});
       await secondaryAuth.signOut();
       return cred.user.uid;
     }finally{if(secondary)await secondary.delete().catch(()=>{});}
@@ -195,48 +198,92 @@
   function isAdmin(){ return currentUser && currentUser.role==='admin'; }
   function requireEditor(){ if(isEditor()) return true; toast('Client access is view-only.','warning'); return false; }
   const LEGACY_ADMIN_EMAIL='ednvines@gmail.com';
+  const PINNED_ROLE_BY_EMAIL=Object.freeze({
+    [LEGACY_ADMIN_EMAIL]:'admin',
+    'zamanshari7733@gmail.com':'admin',
+    'staff@warehouse-client.com':'staff'
+  });
+  const VALID_ACCOUNT_ROLES=new Set(['admin','staff','client']);
   const LAST_LOGIN_HINT_KEY='wrs_last_login_hint_v2';
+  function normalizeRole(value){
+    const role=String(value||'').trim().toLowerCase();
+    return VALID_ACCOUNT_ROLES.has(role)?role:'';
+  }
+  function pinnedRoleForEmail(email){
+    return PINNED_ROLE_BY_EMAIL[String(email||'').trim().toLowerCase()]||'';
+  }
   function resolveLoginEmail(value){
     const raw=String(value||'').trim().toLowerCase();
     if(raw.includes('@'))return raw;
     const slug=loginSlug(raw);
     if(slug==='admin')return LEGACY_ADMIN_EMAIL;
     if(slug==='staff')return 'staff@warehouse-client.com';
-    return `${slug}@warehouse-client.com`;
+    return slug+'@warehouse-client.com';
   }
   function inferLegacyProfile(firebaseUser,loginHint=''){
     const email=String(firebaseUser?.email||'').trim().toLowerCase();
     const raw=String(loginHint||email.split('@')[0]||'').trim();
     const slug=loginSlug(raw||email.split('@')[0]);
-    if(slug==='admin'||email===LEGACY_ADMIN_EMAIL){
-      return {email,displayName:'Warehouse Admin',role:'admin',companyId:ALL_COMPANIES,companyName:'All Companies',active:true};
-    }
-    if(slug==='staff'||email==='staff@warehouse-client.com'){
-      return {email,displayName:'Warehouse Staff',role:'staff',companyId:ALL_COMPANIES,companyName:'All Companies',active:true};
-    }
-    const company=COMPANIES.find(name=>loginSlug(name)===slug)||raw||email.split('@')[0];
-    return {email,displayName:company,role:'client',companyId:companyIdFor(company),companyName:company,active:true};
+    const pinned=pinnedRoleForEmail(email);
+    if(pinned==='admin'||slug==='admin')return {email,displayName:email==='zamanshari7733@gmail.com'?'zamanshari7733':'Warehouse Admin',role:'admin',companyId:ALL_COMPANIES,companyName:'All Companies',active:true,roleLocked:true};
+    if(pinned==='staff'||slug==='staff')return {email,displayName:'Warehouse Staff',role:'staff',companyId:ALL_COMPANIES,companyName:'All Companies',active:true,roleLocked:true};
+    const company=COMPANIES.find(name=>loginSlug(name)===slug);
+    if(!company&&!email.endsWith('@warehouse-client.com'))return null;
+    const resolvedCompany=company||raw||email.split('@')[0];
+    return {email,displayName:resolvedCompany,role:'client',companyId:companyIdFor(resolvedCompany),companyName:resolvedCompany,active:true};
+  }
+  function profileTime(data={}){
+    for(const key of ['roleUpdatedAt','updatedAt','createdAt']){const ms=Date.parse(data[key]||'');if(Number.isFinite(ms))return ms;}
+    return 0;
+  }
+  function chooseProfile(candidates=[],uid=''){
+    const rows=candidates.map(x=>({source:x.source,id:x.snap.id,...(x.snap.data()||{})})).filter(x=>normalizeRole(x.role||x.userRole));
+    rows.sort((a,b)=>{
+      const pinA=pinnedRoleForEmail(a.email),pinB=pinnedRoleForEmail(b.email);
+      if(pinA!==pinB)return Number(!!pinB)-Number(!!pinA);
+      if((b.roleLocked===true)!==(a.roleLocked===true))return Number(b.roleLocked===true)-Number(a.roleLocked===true);
+      const dt=profileTime(b)-profileTime(a);if(dt)return dt;
+      return Number(b.source==='users'&&b.id===uid)-Number(a.source==='users'&&a.id===uid);
+    });
+    return rows[0]||null;
+  }
+  async function saveCanonicalProfile(firebaseUser,profile,extra={}){
+    const email=String(firebaseUser.email||profile.email||'').trim().toLowerCase();
+    let role=normalizeRole(profile.role||profile.userRole);
+    const pinned=pinnedRoleForEmail(email);
+    if(pinned)role=pinned;
+    if(!role)throw new Error('Account role is missing. Please ask an admin to assign a role.');
+    const companyId=role==='client'?(profile.companyId||profile.company||companyIdFor(profile.companyName||email.split('@')[0])):ALL_COMPANIES;
+    const companyName=role==='client'?(profile.companyName||profile.company||companyNameFromId(companyId)):'All Companies';
+    const payload={email,displayName:profile.displayName||profile.name||email.split('@')[0]||'User',role,companyId,companyName,active:profile.active!==false,roleLocked:profile.roleLocked===true||!!pinned,updatedAt:nowISO(),...extra};
+    if(pinned){payload.roleLocked=true;payload.roleUpdatedAt=profile.roleUpdatedAt||nowISO();payload.roleUpdatedBy=profile.roleUpdatedBy||'role-guard';}
+    await db.collection('users').doc(firebaseUser.uid).set(payload,{merge:true});
+    return {id:firebaseUser.uid,...profile,...payload};
   }
   async function findUserProfile(firebaseUser,loginHint=''){
     const email=String(firebaseUser.email||'').trim().toLowerCase();
-    const candidates=[];
-    try{candidates.push(await db.collection('users').doc(firebaseUser.uid).get());}catch(e){}
+    const candidates=[];const add=(source,snap)=>{if(snap&&snap.exists)candidates.push({source,snap});};
+    try{add('users',await db.collection('users').doc(firebaseUser.uid).get());}catch(e){}
     if(email){
-      try{candidates.push(await db.collection('users').doc(email).get());}catch(e){}
-      try{const q=await db.collection('users').where('email','==',email).limit(1).get();if(!q.empty)candidates.push(q.docs[0]);}catch(e){}
-      try{const q=await db.collection('accounts').where('email','==',email).limit(1).get();if(!q.empty)candidates.push(q.docs[0]);}catch(e){}
+      try{add('users',await db.collection('users').doc(email).get());}catch(e){}
+      try{const q=await db.collection('users').where('email','==',email).limit(10).get();q.docs.forEach(d=>add('users',d));}catch(e){}
+      try{const q=await db.collection('accounts').where('email','==',email).limit(10).get();q.docs.forEach(d=>add('accounts',d));}catch(e){}
     }
-    const snap=candidates.find(item=>item&&item.exists);
-    if(snap)return {id:snap.id,...snap.data()};
+    const stored=chooseProfile(candidates,firebaseUser.uid);
+    const pinned=pinnedRoleForEmail(email);
+    if(stored||pinned){
+      const base=stored||{email,displayName:email.split('@')[0],active:true};
+      return await saveCanonicalProfile(firebaseUser,{...base,email,role:pinned||base.role||base.userRole},{repairedByApp:!!pinned,migratedFrom:stored&&!(stored.source==='users'&&stored.id===firebaseUser.uid)?stored.source+':'+stored.id:''});
+    }
     const repaired=inferLegacyProfile(firebaseUser,loginHint);
-    try{await db.collection('users').doc(firebaseUser.uid).set({...repaired,uid:firebaseUser.uid,updatedAt:nowISO(),repairedByApp:true},{merge:true});}
-    catch(e){console.warn('Profile repair skipped:',e?.code||e?.message||e);}
-    return repaired;
+    if(!repaired)throw new Error('This Firebase login has no role profile. Ask an admin to create or assign the account role.');
+    return await saveCanonicalProfile(firebaseUser,repaired,{repairedByApp:true,roleUpdatedAt:nowISO(),roleUpdatedBy:'legacy-repair'});
   }
   async function openUserSession(firebaseUser,showMessage=true,loginHint=''){
     const profile=await findUserProfile(firebaseUser,loginHint);
     if(profile.active===false){await auth.signOut();throw new Error('This account is disabled.');}
-    const role=String(profile.role||profile.userRole||'client').toLowerCase();
+    const role=normalizeRole(profile.role||profile.userRole);
+    if(!role)throw new Error('Account role is missing. Please ask an admin to assign a role.');
     const companyId=profile.companyId||profile.company||profile.companyName||(role==='client'?loginSlug(loginHint):ALL_COMPANIES);
     const company=role==='client'?(profile.companyName||profile.company||companyNameFromId(companyId)):ALL_COMPANIES;
     currentUser={uid:firebaseUser.uid,email:firebaseUser.email,username:loginHint||firebaseUser.email,role,companyId,company,companyName:company,displayName:profile.displayName||profile.name||firebaseUser.email};
