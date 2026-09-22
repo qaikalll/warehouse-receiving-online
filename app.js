@@ -138,7 +138,7 @@
       const cred=await secondaryAuth.createUserWithEmailAndPassword(email,password);
       const companyId=safeRole==='client'?companyIdFor(companyName):ALL_COMPANIES;
       const stamp=nowISO();
-      await db.collection('users').doc(cred.user.uid).set({email:String(email||'').trim().toLowerCase(),displayName,role:safeRole,companyId,companyName:safeRole==='client'?companyName:'All Companies',active:true,roleLocked:true,roleUpdatedAt:stamp,roleUpdatedBy:currentUser?.email||'account-creator',createdAt:stamp,createdBy:currentUser?.email||''});
+      await db.collection('users').doc(cred.user.uid).set({email:String(email||'').trim().toLowerCase(),displayName,role:safeRole,companyId,companyName:safeRole==='client'?companyName:'All Companies',active:true,roleLocked:false,roleUpdatedAt:stamp,roleUpdatedBy:currentUser?.email||'account-creator',createdAt:stamp,createdBy:currentUser?.email||''});
       await secondaryAuth.signOut();
       return cred.user.uid;
     }finally{if(secondary)await secondary.delete().catch(()=>{});}
@@ -200,8 +200,10 @@
   const LEGACY_ADMIN_EMAIL='ednvines@gmail.com';
   const PINNED_ROLE_BY_EMAIL=Object.freeze({
     [LEGACY_ADMIN_EMAIL]:'admin',
-    'zamanshari7733@gmail.com':'admin',
     'staff@warehouse-client.com':'staff'
+  });
+  const ROLE_MIGRATIONS=Object.freeze({
+    'zamanshari7733@gmail.com':'admin'
   });
   const VALID_ACCOUNT_ROLES=new Set(['admin','staff','client']);
   const LAST_LOGIN_HINT_KEY='wrs_last_login_hint_v2';
@@ -217,25 +219,30 @@
     const actor=String(currentUser.email||'').trim().toLowerCase();
     const jobs=[];
     for(const account of rawAccounts){
-      const expected=pinnedRoleForEmail(account.email);
+      const email=String(account.email||'').trim().toLowerCase();
+      const pinned=pinnedRoleForEmail(email);
+      const migrated=ROLE_MIGRATIONS[email]||'';
+      const expected=pinned||migrated;
       if(!expected)continue;
       const currentRole=normalizeRole(account.role||account.userRole);
-      const badCompany=String(account.companyId||'')!==ALL_COMPANIES||String(account.companyName||'')!=='All Companies';
-      if(currentRole===expected&&!badCompany&&account.roleLocked===true)continue;
+      const badCompany=expected!=='client'&&(String(account.companyId||'')!==ALL_COMPANIES||String(account.companyName||'')!=='All Companies');
+      const mustRepair=currentRole!==expected||badCompany||(pinned&&account.roleLocked!==true);
+      if(!mustRepair)continue;
       const stamp=nowISO();
       jobs.push(
         db.collection('users').doc(account.uid).set({
-          email:String(account.email||'').trim().toLowerCase(),
+          email,
           role:expected,
-          companyId:ALL_COMPANIES,
-          companyName:'All Companies',
-          roleLocked:true,
+          companyId:expected==='client'?(account.companyId||companyIdFor(account.companyName||'')):ALL_COMPANIES,
+          companyName:expected==='client'?(account.companyName||companyNameFromId(account.companyId)):'All Companies',
+          roleLocked:!!pinned,
           roleUpdatedAt:stamp,
           roleUpdatedBy:actor,
           updatedAt:stamp,
-          updatedBy:actor
+          updatedBy:actor,
+          roleMigrationApplied:migrated?true:(account.roleMigrationApplied||false)
         },{merge:true}).catch(err=>{
-          console.warn('Protected role reconciliation skipped for',account.email,err?.code||err?.message||err);
+          console.warn('Role reconciliation skipped for',account.email,err?.code||err?.message||err);
         })
       );
     }
@@ -253,7 +260,7 @@
     const companyId=role==='client'?companyIdFor(companyName):ALL_COMPANIES;
     const stamp=nowISO();
     await db.collection('users').doc(account.uid).set({
-      role,companyId,companyName,roleLocked:true,
+      role,companyId,companyName,roleLocked:!!pinned,
       roleUpdatedAt:stamp,roleUpdatedBy:currentUser.email,
       updatedAt:stamp,updatedBy:currentUser.email
     },{merge:true});
