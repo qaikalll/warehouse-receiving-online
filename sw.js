@@ -75,12 +75,12 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-const CACHE='wrs-20260827-return-v1';
+const CACHE='wrs-20260922-role-persistence-v1';
 const RETURN_SCRIPT='<script src="./return-module.js?v=20260827-return-v1"></script>';
 const CORE=[
   './',
   './app.css?v=20260807-full-app-i18n-v6-4',
-  './app.js?v=20260807-full-app-i18n-v6-4',
+  './app.js?v=20260922-role-persistence-v1',
   './branding.js?v=20260807-full-app-i18n-v6-4',
   './install.js?v=20260807-full-app-i18n-v6-4',
   './app-i18n.js?v=20260807-full-app-i18n-v6-4',
