@@ -5,6 +5,7 @@
   const START_KEY='wrs_booking_notify_start_v1';
   const READ_KEY='wrs_booking_read_ids_v1';
   const LEGACY_ADMIN_EMAIL='ednvines@gmail.com';
+  const ADMIN_EMAILS=new Set([LEGACY_ADMIN_EMAIL,'zamanshari7733@gmail.com']);
 
   const state={
     user:null,
@@ -100,7 +101,7 @@
   async function resolveAdmin(user){
     if(!user)return false;
     const email=String(user.email||'').toLowerCase();
-    if(email===LEGACY_ADMIN_EMAIL)return true;
+    if(ADMIN_EMAILS.has(email))return true;
     try{
       const db=firebase.firestore();
       const direct=await db.collection('users').doc(user.uid).get();
