@@ -257,7 +257,14 @@
     const companyName=role==='client'?(profile.companyName||profile.company||companyNameFromId(companyId)):'All Companies';
     const payload={email,displayName:profile.displayName||profile.name||email.split('@')[0]||'User',role,companyId,companyName,active:profile.active!==false,roleLocked:profile.roleLocked===true||!!pinned,updatedAt:nowISO(),...extra};
     if(pinned){payload.roleLocked=true;payload.roleUpdatedAt=profile.roleUpdatedAt||nowISO();payload.roleUpdatedBy=profile.roleUpdatedBy||'role-guard';}
-    await db.collection('users').doc(firebaseUser.uid).set(payload,{merge:true});
+    try{
+      await db.collection('users').doc(firebaseUser.uid).set(payload,{merge:true});
+    }catch(e){
+      const code=String(e?.code||'').toLowerCase();
+      if(code.includes('permission-denied')||code.includes('insufficient-permissions')){
+        console.warn('Profile repair write skipped; login will continue with the verified profile.',e?.code||e?.message||e);
+      }else throw e;
+    }
     return {id:firebaseUser.uid,...profile,...payload};
   }
   async function findUserProfile(firebaseUser,loginHint=''){
@@ -273,7 +280,10 @@
     const pinned=pinnedRoleForEmail(email);
     if(stored||pinned){
       const base=stored||{email,displayName:email.split('@')[0],active:true};
-      return await saveCanonicalProfile(firebaseUser,{...base,email,role:pinned||base.role||base.userRole},{repairedByApp:!!pinned,migratedFrom:stored&&!(stored.source==='users'&&stored.id===firebaseUser.uid)?stored.source+':'+stored.id:''});
+      const resolvedRole=pinned||normalizeRole(base.role||base.userRole);
+      const canonical=stored&&stored.source==='users'&&stored.id===firebaseUser.uid;
+      if(canonical&&!pinned)return {id:stored.id,...base,role:resolvedRole};
+      return await saveCanonicalProfile(firebaseUser,{...base,email,role:resolvedRole},{repairedByApp:!!pinned,migratedFrom:stored&&!canonical?stored.source+':'+stored.id:''});
     }
     const repaired=inferLegacyProfile(firebaseUser,loginHint);
     if(!repaired)throw new Error('This Firebase login has no role profile. Ask an admin to create or assign the account role.');
