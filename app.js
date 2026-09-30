@@ -13,7 +13,9 @@
   const firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+  const guardian = ReceivingGuardian.create({db,auth,onIncident:item=>persistGuardianIncident(item),onHealth:()=>renderGuardianPanel()});
+  window.wrsGuardian=guardian;
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>guardian.report('Authentication','persistence',e));
   const RECEIVING_KEY = 'wrs_receiving_records_v1';
   const DISCREPANCY_KEY = 'wrs_discrepancy_records_v1';
   const ACTIVE_COMPANY_KEY = 'wrs_active_company_v1';
@@ -36,6 +38,9 @@
   let timerInterval = null;
   let currentUser = null;
   let accounts = [];
+  let profileUnsubscribe=null, sessionOpening=null, sessionEpoch=0;
+  let discrepancyDraftId='', bookingDraftId='';
+  let receivingEditBase=null, discrepancyEditBase=null;
   let unsubscribeReceiving = null;
   let unsubscribeDiscrepancy = null;
   let unsubscribeAccounts = null;
@@ -97,7 +102,7 @@
     };
     return map[error?.code] || error?.message || 'Something went wrong.';
   }
-  function normalizeDocument(snapshot){const data=snapshot.data();return {...data,id:data.id||snapshot.id,firestoreId:snapshot.id};}
+  function normalizeDocument(snapshot){const data=snapshot.data();return {...data,id:snapshot.id,firestoreId:snapshot.id};}
   function companyNameFromId(id){
     const found=COMPANIES.find(c=>companyIdFor(c)===id);
     return found||String(id||'').replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||'Unassigned';
@@ -116,20 +121,23 @@
     [unsubscribeReceiving,unsubscribeDiscrepancy,unsubscribeAccounts,unsubscribeCompanies,bookingSlotUnsubscribe].forEach(fn=>{try{fn?.()}catch(e){}});
     unsubscribeReceiving=unsubscribeDiscrepancy=unsubscribeAccounts=unsubscribeCompanies=bookingSlotUnsubscribe=null;
   }
-  function renderAll(){mergeCompanyNames();updateWorkspaceUI();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();}
+  function renderAll(){[mergeCompanyNames,updateWorkspaceUI,renderReceivingTable,renderDiscrepancyTable,renderDashboard,refreshDatalists].forEach(fn=>guardian.isolate(fn.name,fn));}
   function subscribeOnlineData(){
     stopSubscriptions();
+    const subscribedEpoch=sessionEpoch,subscribedUid=currentUser?.uid;
+    const sessionCurrent=()=>subscribedEpoch===sessionEpoch&&currentUser?.uid===subscribedUid&&guardian.identity?.uid===subscribedUid;
     const client=currentUser?.role==='client';
     const recBase=db.collection('receivings'),discBase=db.collection('discrepancies');
     const recQ=client?recBase.where('companyId','==',currentUser.companyId):recBase;
     const discQ=client?discBase.where('companyId','==',currentUser.companyId):discBase;
-    unsubscribeReceiving=recQ.onSnapshot(snap=>{receivingRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Receiving sync error: '+authErrorMessage(e),'warning'));
-    unsubscribeDiscrepancy=discQ.onSnapshot(snap=>{discrepancyRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>toast('Discrepancy sync error: '+authErrorMessage(e),'warning'));
-    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{const raw=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(a=>a.type!=='company');accounts=raw.map(a=>{const pinned=pinnedRoleForEmail(a.email);return pinned?{...a,role:pinned,companyId:ALL_COMPANIES,companyName:'All Companies',roleLocked:true}:a});reconcileProtectedAccountRoles(raw).catch(e=>console.warn('Role reconciliation error:',e?.code||e?.message||e));mergeCompanyNames();renderAccounts();},e=>toast('Account list error: '+authErrorMessage(e),'warning'));
-    unsubscribeCompanies=db.collection('companies').onSnapshot(snap=>{onlineCompanies=snap.docs.map(d=>d.data().name||d.id).filter(Boolean);mergeCompanyNames();updateWorkspaceUI();refreshDatalists();},()=>{});
+    unsubscribeReceiving=recQ.onSnapshot(snap=>{if(!sessionCurrent())return;guardian.setHealth('Receiving',(snap.metadata.fromCache||snap.metadata.hasPendingWrites)?'DEGRADED':'HEALTHY');receivingRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>{if(!sessionCurrent())return;guardian.report('Receiving','sync',e);guardian.setHealth('Receiving','DEGRADED');toast('Receiving sync error: '+authErrorMessage(e),'warning')});
+    unsubscribeDiscrepancy=discQ.onSnapshot(snap=>{if(!sessionCurrent())return;guardian.setHealth('Discrepancy',(snap.metadata.fromCache||snap.metadata.hasPendingWrites)?'DEGRADED':'HEALTHY');discrepancyRecords=snap.docs.map(normalizeDocument).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));renderAll();},e=>{if(!sessionCurrent())return;guardian.report('Discrepancy','sync',e);guardian.setHealth('Discrepancy','DEGRADED');toast('Discrepancy sync error: '+authErrorMessage(e),'warning')});
+    if(isAdmin()) unsubscribeAccounts=db.collection('users').onSnapshot(snap=>{if(!sessionCurrent())return;accounts=snap.docs.map(d=>({...d.data(),uid:d.id})).filter(a=>a.type!=='company');mergeCompanyNames();renderAccounts();},e=>{if(!sessionCurrent())return;guardian.report('Permissions','accounts-sync',e);toast('Account list error: '+authErrorMessage(e),'warning')});
+    unsubscribeCompanies=db.collection('companies').onSnapshot(snap=>{if(!sessionCurrent())return;onlineCompanies=snap.docs.map(d=>d.data().name||d.id).filter(Boolean);mergeCompanyNames();updateWorkspaceUI();refreshDatalists();},e=>{if(sessionCurrent())guardian.report('Companies','sync',e);});
   }
   async function createOnlineAccount(email,password,displayName,role,companyName){
     let secondary=null;
+    const actor=await guardian.assertAccess();if(actor.role!=='admin')throw new Error('Admin access required.');
     try{
       const safeRole=normalizeRole(role);
       if(!safeRole)throw new Error('Please select a valid account role.');
@@ -138,17 +146,28 @@
       const cred=await secondaryAuth.createUserWithEmailAndPassword(email,password);
       const companyId=safeRole==='client'?companyIdFor(companyName):ALL_COMPANIES;
       const stamp=nowISO();
-      await db.collection('users').doc(cred.user.uid).set({email:String(email||'').trim().toLowerCase(),displayName,role:safeRole,companyId,companyName:safeRole==='client'?companyName:'All Companies',active:true,roleLocked:false,roleUpdatedAt:stamp,roleUpdatedBy:currentUser?.email||'account-creator',createdAt:stamp,createdBy:currentUser?.email||''});
+      const auditRef=db.collection('guardian_role_audit').doc();
+      await guardian.commit('Permissions:create:'+cred.user.uid,[
+        {ref:db.collection('users').doc(cred.user.uid),create:true,data:{email:String(email||'').trim().toLowerCase(),displayName,role:safeRole,companyId,companyName:safeRole==='client'?companyName:'All Companies',active:true,roleLocked:false,roleAuditId:auditRef.id,roleUpdatedAt:stamp,roleUpdatedBy:actor.email,createdAt:stamp,createdBy:actor.email,updatedAt:stamp}},
+        {ref:auditRef,create:true,data:{actorUid:actor.uid,targetUid:cred.user.uid,previousRole:'none',newRole:safeRole,at:stamp,action:'explicit-admin-create'}}
+      ],{admin:true});
+      const saved=await db.collection('users').doc(cred.user.uid).get({source:'server'});
+      if(!saved.exists||saved.data().role!==safeRole)throw new Error('Created account profile could not be verified.');
       await secondaryAuth.signOut();
       return cred.user.uid;
-    }finally{if(secondary)await secondary.delete().catch(()=>{});}
+    }catch(e){guardian.report('Permissions','create-account',e,'CRITICAL');/* A cross-service Auth/Firestore outcome can be uncertain: never delete the new identity automatically. */throw e;}finally{if(secondary)await secondary.delete().catch(()=>{});}
+  }
+  async function removeRecordSet(rec,disc,key){
+    const ops=[...rec.map(r=>({ref:db.collection('receivings').doc(r.id),base:r.updatedAt||null,remove:true})),...disc.map(d=>({ref:db.collection('discrepancies').doc(d.id),base:d.updatedAt||null,remove:true})),...rec.map(r=>({ref:receivingClaim(r).ref,remove:true,owner:r.id}))];
+    if(ops.length>100)throw new Error('This deletion needs an administrator-maintained batch with a verified backup. No records were deleted.');
+    if(ops.length)await guardian.commit(key,ops);
   }
   async function clearWorkspaceData(name){
-    const rec=receivingRecords.filter(r=>r.customer===name),disc=discrepancyRecords.filter(d=>d.customer===name);
-    await Promise.all([...rec.map(r=>db.collection('receivings').doc(r.id).delete()),...disc.map(d=>db.collection('discrepancies').doc(d.id).delete())]);
+    await removeRecordSet(receivingRecords.filter(r=>r.customer===name),discrepancyRecords.filter(d=>d.customer===name),'Receiving:clear-workspace');
   }
   async function clearAllData(){
-    await Promise.all([...receivingRecords.map(r=>db.collection('receivings').doc(r.id).delete()),...discrepancyRecords.map(d=>db.collection('discrepancies').doc(d.id).delete())]);
+    await guardian.assertAccess();if(!isAdmin())throw new Error('Admin access required.');
+    await removeRecordSet(receivingRecords,discrepancyRecords,'Receiving:clear-all');
   }
   async function compressImage(file){
     if(!file.type.startsWith('image/'))throw new Error('Please select an image file.');
@@ -214,40 +233,6 @@
   function pinnedRoleForEmail(email){
     return PINNED_ROLE_BY_EMAIL[String(email||'').trim().toLowerCase()]||'';
   }
-  async function reconcileProtectedAccountRoles(rawAccounts=[]){
-    if(!isAdmin()||!currentUser?.email)return;
-    const actor=String(currentUser.email||'').trim().toLowerCase();
-    const jobs=[];
-    for(const account of rawAccounts){
-      const email=String(account.email||'').trim().toLowerCase();
-      const pinned=pinnedRoleForEmail(email);
-      const migrated=ROLE_MIGRATIONS[email]||'';
-      const expected=pinned||migrated;
-      if(!expected)continue;
-      const currentRole=normalizeRole(account.role||account.userRole);
-      const badCompany=expected!=='client'&&(String(account.companyId||'')!==ALL_COMPANIES||String(account.companyName||'')!=='All Companies');
-      const mustRepair=currentRole!==expected||badCompany||(pinned&&account.roleLocked!==true);
-      if(!mustRepair)continue;
-      const stamp=nowISO();
-      jobs.push(
-        db.collection('users').doc(account.uid).set({
-          email,
-          role:expected,
-          companyId:expected==='client'?(account.companyId||companyIdFor(account.companyName||'')):ALL_COMPANIES,
-          companyName:expected==='client'?(account.companyName||companyNameFromId(account.companyId)):'All Companies',
-          roleLocked:!!pinned,
-          roleUpdatedAt:stamp,
-          roleUpdatedBy:actor,
-          updatedAt:stamp,
-          updatedBy:actor,
-          roleMigrationApplied:migrated?true:(account.roleMigrationApplied||false)
-        },{merge:true}).catch(err=>{
-          console.warn('Role reconciliation skipped for',account.email,err?.code||err?.message||err);
-        })
-      );
-    }
-    if(jobs.length)await Promise.all(jobs);
-  }
   async function updateAccountRoleFromAdmin(account,newRole){
     if(!isAdmin())throw new Error('Admin access required.');
     const safeRole=normalizeRole(newRole);
@@ -259,12 +244,13 @@
     const companyName=role==='client'?(currentCompany&&currentCompany!=='All Companies'?currentCompany:(COMPANIES[0]||'')):'All Companies';
     const companyId=role==='client'?companyIdFor(companyName):ALL_COMPANIES;
     const stamp=nowISO();
-    await db.collection('users').doc(account.uid).set({
-      role,companyId,companyName,roleLocked:!!pinned,
-      roleUpdatedAt:stamp,roleUpdatedBy:currentUser.email,
-      updatedAt:stamp,updatedBy:currentUser.email
-    },{merge:true});
+    const auditRef=db.collection('guardian_role_audit').doc();
+    await guardian.commit('Permissions:'+account.uid,[
+      {ref:db.collection('users').doc(account.uid),requireExists:true,base:account.updatedAt||null,data:{role,companyId,companyName,roleLocked:!!pinned,roleUpdatedAt:stamp,roleUpdatedBy:currentUser.email,roleAuditId:auditRef.id,updatedAt:stamp,updatedBy:currentUser.email}},
+      {ref:auditRef,create:true,data:{actorUid:currentUser.uid,targetUid:account.uid,previousRole:account.role,newRole:role,at:stamp,action:'explicit-admin-role-change'}}
+    ],{admin:true});
   }
+
   function resolveLoginEmail(value){
     const raw=String(value||'').trim().toLowerCase();
     if(raw.includes('@'))return raw;
@@ -273,95 +259,45 @@
     if(slug==='staff')return 'staff@warehouse-client.com';
     return slug+'@warehouse-client.com';
   }
-  function inferLegacyProfile(firebaseUser,loginHint=''){
-    const email=String(firebaseUser?.email||'').trim().toLowerCase();
-    const raw=String(loginHint||email.split('@')[0]||'').trim();
-    const slug=loginSlug(raw||email.split('@')[0]);
-    const pinned=pinnedRoleForEmail(email);
-    if(pinned==='admin'||slug==='admin')return {email,displayName:email==='zamanshari7733@gmail.com'?'zamanshari7733':'Warehouse Admin',role:'admin',companyId:ALL_COMPANIES,companyName:'All Companies',active:true,roleLocked:true};
-    if(pinned==='staff'||slug==='staff')return {email,displayName:'Warehouse Staff',role:'staff',companyId:ALL_COMPANIES,companyName:'All Companies',active:true,roleLocked:true};
-    const company=COMPANIES.find(name=>loginSlug(name)===slug);
-    if(!company&&!email.endsWith('@warehouse-client.com'))return null;
-    const resolvedCompany=company||raw||email.split('@')[0];
-    return {email,displayName:resolvedCompany,role:'client',companyId:companyIdFor(resolvedCompany),companyName:resolvedCompany,active:true};
-  }
-  function profileTime(data={}){
-    for(const key of ['roleUpdatedAt','updatedAt','createdAt']){const ms=Date.parse(data[key]||'');if(Number.isFinite(ms))return ms;}
-    return 0;
-  }
-  function chooseProfile(candidates=[],uid=''){
-    const rows=candidates.map(x=>({source:x.source,id:x.snap.id,...(x.snap.data()||{})})).filter(x=>normalizeRole(x.role||x.userRole));
-    rows.sort((a,b)=>{
-      const pinA=pinnedRoleForEmail(a.email),pinB=pinnedRoleForEmail(b.email);
-      if(pinA!==pinB)return Number(!!pinB)-Number(!!pinA);
-      if((b.roleLocked===true)!==(a.roleLocked===true))return Number(b.roleLocked===true)-Number(a.roleLocked===true);
-      const dt=profileTime(b)-profileTime(a);if(dt)return dt;
-      return Number(b.source==='users'&&b.id===uid)-Number(a.source==='users'&&a.id===uid);
-    });
-    return rows[0]||null;
-  }
-  async function saveCanonicalProfile(firebaseUser,profile,extra={}){
-    const email=String(firebaseUser.email||profile.email||'').trim().toLowerCase();
-    let role=normalizeRole(profile.role||profile.userRole);
-    const pinned=pinnedRoleForEmail(email);
-    if(pinned)role=pinned;
-    if(!role)throw new Error('Account role is missing. Please ask an admin to assign a role.');
-    const companyId=role==='client'?(profile.companyId||profile.company||companyIdFor(profile.companyName||email.split('@')[0])):ALL_COMPANIES;
-    const companyName=role==='client'?(profile.companyName||profile.company||companyNameFromId(companyId)):'All Companies';
-    const payload={email,displayName:profile.displayName||profile.name||email.split('@')[0]||'User',role,companyId,companyName,active:profile.active!==false,roleLocked:profile.roleLocked===true||!!pinned,updatedAt:nowISO(),...extra};
-    if(pinned){payload.roleLocked=true;payload.roleUpdatedAt=profile.roleUpdatedAt||nowISO();payload.roleUpdatedBy=profile.roleUpdatedBy||'role-guard';}
-    try{
-      await db.collection('users').doc(firebaseUser.uid).set(payload,{merge:true});
-    }catch(e){
-      const code=String(e?.code||'').toLowerCase();
-      if(code.includes('permission-denied')||code.includes('insufficient-permissions')){
-        console.warn('Profile repair write skipped; login will continue with the verified profile.',e?.code||e?.message||e);
-      }else throw e;
-    }
-    return {id:firebaseUser.uid,...profile,...payload};
-  }
-  async function findUserProfile(firebaseUser,loginHint=''){
-    const email=String(firebaseUser.email||'').trim().toLowerCase();
-    const candidates=[];const add=(source,snap)=>{if(snap&&snap.exists)candidates.push({source,snap});};
-    try{add('users',await db.collection('users').doc(firebaseUser.uid).get());}catch(e){}
-    if(email){
-      try{add('users',await db.collection('users').doc(email).get());}catch(e){}
-      try{const q=await db.collection('users').where('email','==',email).limit(10).get();q.docs.forEach(d=>add('users',d));}catch(e){}
-      try{const q=await db.collection('accounts').where('email','==',email).limit(10).get();q.docs.forEach(d=>add('accounts',d));}catch(e){}
-    }
-    const stored=chooseProfile(candidates,firebaseUser.uid);
-    const pinned=pinnedRoleForEmail(email);
-    if(stored||pinned){
-      const base=stored||{email,displayName:email.split('@')[0],active:true};
-      const resolvedRole=pinned||normalizeRole(base.role||base.userRole);
-      const canonical=stored&&stored.source==='users'&&stored.id===firebaseUser.uid;
-      if(canonical&&!pinned)return {id:stored.id,...base,role:resolvedRole};
-      return await saveCanonicalProfile(firebaseUser,{...base,email,role:resolvedRole},{repairedByApp:!!pinned,migratedFrom:stored&&!canonical?stored.source+':'+stored.id:''});
-    }
-    const repaired=inferLegacyProfile(firebaseUser,loginHint);
-    if(!repaired)throw new Error('This Firebase login has no role profile. Ask an admin to create or assign the account role.');
-    return await saveCanonicalProfile(firebaseUser,repaired,{repairedByApp:true,roleUpdatedAt:nowISO(),roleUpdatedBy:'legacy-repair'});
+  async function findUserProfile(firebaseUser){
+    return guardian.readProfile(firebaseUser);
   }
   async function openUserSession(firebaseUser,showMessage=true,loginHint=''){
+    if(sessionOpening?.uid===firebaseUser.uid)return sessionOpening.promise;
+    const epoch=sessionEpoch;
+    const promise=applyUserSession(firebaseUser,showMessage,loginHint,epoch);
+    sessionOpening={uid:firebaseUser.uid,promise};
+    try{return await promise;}finally{if(sessionOpening?.promise===promise)sessionOpening=null;}
+  }
+  async function applyUserSession(firebaseUser,showMessage=true,loginHint='',epoch=sessionEpoch){
     const profile=await findUserProfile(firebaseUser,loginHint);
+    if(epoch!==sessionEpoch||auth.currentUser?.uid!==firebaseUser.uid)throw new Error('Session changed. Please sign in again.');
     if(profile.active===false){await auth.signOut();throw new Error('This account is disabled.');}
     const role=normalizeRole(profile.role||profile.userRole);
     if(!role)throw new Error('Account role is missing. Please ask an admin to assign a role.');
     const companyId=profile.companyId||profile.company||profile.companyName||(role==='client'?loginSlug(loginHint):ALL_COMPANIES);
     const company=role==='client'?(profile.companyName||profile.company||companyNameFromId(companyId)):ALL_COMPANIES;
     currentUser={uid:firebaseUser.uid,email:firebaseUser.email,username:loginHint||firebaseUser.email,role,companyId,company,companyName:company,displayName:profile.displayName||profile.name||firebaseUser.email};
+    guardian.setIdentity(profile);
+    watchProfile(firebaseUser);
     document.body.classList.remove('logged-out','role-client','role-staff','role-admin');
     document.body.classList.add('role-'+currentUser.role);
     $('signedInUser').textContent=`${currentUser.displayName} · ${currentUser.role.toUpperCase()}`;
     if(currentUser.role==='client')activeCompany=currentUser.company;else if(activeCompany!==ALL_COMPANIES&&!COMPANIES.includes(activeCompany))activeCompany=ALL_COMPANIES;
     localStorage.setItem(ACTIVE_COMPANY_KEY,activeCompany);
+    restoringSession=true;
     applyTheme(currentTheme,false);mergeCompanyNames(currentUser.role==='client'?[currentUser.company]:[]);resetReceivingForm();resetDiscrepancyForm();subscribeOnlineData();resetBookingForm();
+    restoringSession=false;restoreGuardianDrafts();
+    renderGuardianPanel();
+    window.dispatchEvent(new CustomEvent('wrs-session-ready',{detail:{uid:currentUser.uid,role:currentUser.role}}));
     if(showMessage)toast(`Signed in as ${currentUser.displayName}.`,'success');
     if(showMessage&&!tutorialIsCompleted())setTimeout(()=>startTutorial(),650);
   }
   async function logout(){
-    closeTutorial(false);stopSubscriptions();stopTimer();currentUser=null;
-    try{await auth.signOut();}catch(e){}
+    sessionEpoch++;profileUnsubscribe?.();profileUnsubscribe=null;
+    closeTutorial(false);stopSubscriptions();stopTimer();currentUser=null;guardian.setIdentity(null);clearSensitiveViews();
+    window.dispatchEvent(new CustomEvent('wrs-session-ready',{detail:null}));
+    try{await auth.signOut();}catch(e){guardian.report('Authentication','logout',e);showError('loginError','Sign-out could not be confirmed. Please retry.');}
     document.body.className='logged-out';applyTheme(currentTheme,false);updateThemeToggleUI();$('loginForm').reset();$('loginError').classList.remove('show');
   }
   function renderAccounts(){
@@ -575,25 +511,32 @@
     if(bookingSlotUnsubscribe){try{bookingSlotUnsubscribe()}catch(e){}bookingSlotUnsubscribe=null;}
     bookingSlotsForDate=new Set();renderBookingSlots();
     if(!currentUser)return;
+    const subscribedEpoch=sessionEpoch,subscribedUid=currentUser.uid;
+    const sessionCurrent=()=>subscribedEpoch===sessionEpoch&&currentUser?.uid===subscribedUid&&$('bookingDate').value===date;
     if($('bookingAvailabilityNote'))$('bookingAvailabilityNote').textContent='Loading live availability…';
     bookingSlotUnsubscribe=db.collection('booking_slots').where('date','==',date).onSnapshot(snap=>{
+      if(!sessionCurrent())return;
+      guardian.setHealth('Booking',snap.metadata.fromCache||snap.metadata.hasPendingWrites?'DEGRADED':'HEALTHY');
       bookingSlotsForDate=new Set(snap.docs.filter(d=>d.data().booked!==false).map(d=>d.data().slotStart));
       const selected=$('bookingSlotStart').value;
       if(selected&&bookingSlotsForDate.has(selected)){$('bookingSlotStart').value='';$('bookingSlotEnd').value='';}
       renderBookingSlots();
     },err=>{
+      if(!sessionCurrent())return;
+      guardian.report('Booking','sync',err);guardian.setHealth('Booking','DEGRADED');
       bookingSlotsForDate=new Set();renderBookingSlots();
       if($('bookingAvailabilityNote'))$('bookingAvailabilityNote').textContent='Could not load live availability: '+authErrorMessage(err);
     });
   }
   function resetBookingForm(){
     const form=$('bookingForm');if(!form)return;
-    form.reset();hideError('bookingError');
+    bookingDraftId='';clearGuardianDraft('bookingForm');form.reset();hideError('bookingError');
     const defaultDate=isAdmin()?todayISO():tomorrowISO();if(isAdmin())$('bookingDate').removeAttribute('min');else $('bookingDate').min=tomorrowISO();$('bookingDate').value=defaultDate;$('bookingSlotStart').value='';$('bookingSlotEnd').value='';
     $('bookingCompanyName').value=bookingCompany();
     loadBookingAvailability(true);updateBookingSummary();
   }
   async function submitShipmentBooking(){
+    if($('submitBookingBtn').disabled)return;
     hideError('bookingError');
     const company=bookingCompany(),date=$('bookingDate').value,slot=selectedBookingSlot();
     const doNumber=$('bookingDONumber').value.trim(),poNumber=$('bookingPONumber').value.trim(),vehicleNumber=$('bookingVehicleNumber').value.trim(),transportType=$('bookingTransportType').value,expectedRaw=$('bookingExpectedQty').value,remarks=$('bookingRemarks').value.trim();
@@ -601,20 +544,22 @@
     if(!company)missing.push('Company');if(!date)missing.push('Delivery Date');if(!slot)missing.push('Time Slot');if(!doNumber)missing.push('DO Number');if(!poNumber)missing.push('PO Number');if(!vehicleNumber)missing.push('Vehicle Number');if(!transportType)missing.push('Transport Type');if(expectedRaw==='')missing.push('Expected Quantity');
    if(missing.length){showError('bookingError','Please complete: '+missing.join(', '));return;}
    if(!isAdmin()&&date<tomorrowISO()){showError('bookingError','Booking must be submitted at least 1 day before delivery.');return;}
+    if(!ReceivingGuardian.quantity(num(expectedRaw))){showError('bookingError','Invalid quantity.');return;}
     if(slot.breakTime){showError('bookingError','1:00–2:00 PM is warehouse break time. Please choose another slot.');return;}
-    const duplicate=receivingRecords.some(r=>r.customer===company&&String(r.doNumber||'').toLowerCase()===doNumber.toLowerCase());
+    const duplicate=receivingRecords.some(r=>r.customer===company&&String(r.doNumber||'').toLowerCase()===doNumber.toLowerCase()&&r.id!==bookingDraftId);
     if(duplicate){showError('bookingError','This DO Number already exists for your company.');return;}
-    const recordId=newRecordId(),created=nowISO();
+    const historical=await guardian.retryRead(()=>db.collection('receivings').where('companyId','==',companyIdFor(company)).get({source:'server'}),'Booking').catch(e=>{showError('bookingError',e.message);return null;});
+    if(!historical)return;
+    if(historical.docs.some(d=>String(d.data().doNumber||'').trim().toLowerCase()===doNumber.toLowerCase()&&d.id!==bookingDraftId)){showError('bookingError','This DO Number already exists for your company.');return;}
+    const recordId=bookingDraftId ||= newRecordId(),created=nowISO();
     const record={id:recordId,doNumber,poNumber,customer:company,companyId:companyIdFor(company),shipmentDate:date,vehicleNumber,transportType,expectedQty:num(expectedRaw),actualQty:'',staffName:'',remarks,arrivalTime:'',startTime:'',completionTime:'',createdAt:created,updatedAt:created,updatedBy:currentUser?.email||'',source:'client-booking',bookingSlot:slot.label,bookingSlotStart:slot.start,bookingSlotEnd:slot.end,bookingCreatedAt:created,bookedBy:currentUser?.email||'',bookingStatus:'Scheduled Inbound'};
     const slotRef=db.collection('booking_slots').doc(bookingSlotDocId(date,slot.start)),recRef=db.collection('receivings').doc(recordId);
     const btn=$('submitBookingBtn');btn.disabled=true;btn.textContent='Saving booking…';
     try{
-      await db.runTransaction(async tx=>{
-        const existing=await tx.get(slotRef);
-        if(existing.exists&&existing.data().booked!==false)throw new Error('SLOT_ALREADY_BOOKED');
-        tx.set(slotRef,{date,slotStart:slot.start,slotEnd:slot.end,slotLabel:slot.label,booked:true,receivingId:recordId,createdAt:created,updatedAt:created});
-        tx.set(recRef,record);
-      });
+      await guardian.commit('Booking:'+recordId,[
+        {ref:slotRef,slot:true,data:{date,slotStart:slot.start,slotEnd:slot.end,slotLabel:slot.label,booked:true,receivingId:recordId,createdAt:created,updatedAt:created}},
+        {ref:recRef,kind:'receiving',create:true,data:record},receivingClaim(record)
+      ],{editor:false});
       toast(`Booking confirmed: ${date} ${slot.label}. Added to Receiving Sheet as Scheduled Inbound.`,'success');
       resetBookingForm();
     }catch(err){
@@ -1193,14 +1138,37 @@
     const duplicate = receivingRecords.some(r => r.customer===record.customer && r.doNumber.toLowerCase()===record.doNumber.toLowerCase() && r.id!==record.id);
     if(duplicate){ showError('receivingError','Duplicate DO Number found for this company. Please check the DO Number.'); return false; }
     if(forStatus && record.completionTime){ showError('receivingError','This record is already completed.'); return false; }
+    try{ReceivingGuardian.validate('receiving',record,receivingRecords.find(r=>r.id===record.id));}catch(e){showError('receivingError',e.message);return false;}
     hideError('receivingError'); return true;
   }
 
+  function receivingClaim(record){
+    const key=ReceivingGuardian.claimKey(record.companyId,record.doNumber);
+    if(new TextEncoder().encode(key).length>1400)throw new Error('DO Number is too long.');
+    record.guardianDoKey=key;
+    return {ref:db.collection('guardian_do_keys').doc(key),claim:true,data:{receivingId:record.id,companyId:record.companyId,doNumber:record.doNumber.trim().toLowerCase()}};
+  }
+  async function receivingWriteOperations(record){
+    const existing=await guardian.retryRead(()=>db.collection('receivings').where('companyId','==',record.companyId).get({source:'server'}),'Receiving');
+    if(existing.docs.some(d=>d.id!==record.id&&String(d.data().doNumber||'').trim().toLowerCase()===record.doNumber.trim().toLowerCase()))throw new Error('This DO Number already exists for this company.');
+    const ops=[{ref:db.collection('receivings').doc(record.id),kind:'receiving',base:receivingEditBase,data:record},receivingClaim(record)];
+    const old=receivingRecords.find(r=>r.id===record.id);
+    if(old&&receivingClaim(old).ref.path!==receivingClaim(record).ref.path)ops.push({ref:receivingClaim(old).ref,remove:true,owner:record.id});
+    return ops;
+  }
   async function saveReceivingRecord(record,quiet=false){
-    try{await db.collection('receivings').doc(record.id).set({...record,updatedServerAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});if(!quiet)toast($('receivingEditId').value?'Receiving record updated.':'Receiving record saved.');return true;}
-    catch(e){const denied=String(e?.code||'').toLowerCase().includes('permission-denied');const msg=denied&&isEditor()?'Your editor role is not synchronized with Firebase yet. Ask the main admin to open Manage Logins once, then sign out and sign in again.':authErrorMessage(e);showError('receivingError',msg);return false;}
+    try{
+      const ops=await receivingWriteOperations(record);
+      await guardian.commit('Receiving:'+record.id,ops);
+      receivingEditBase=record.updatedAt;
+      $('receivingEditId').value=record.id;
+      ['arrivalTime','startTime','completionTime'].forEach(k=>$('receivingForm').dataset[k]=record[k]||'');
+      clearGuardianDraft('receivingForm');
+      if(!quiet)toast('Receiving record saved and verified.');return true;
+    }catch(e){showError('receivingError',authErrorMessage(e));return false;}
   }
   function resetReceivingForm(){
+    receivingEditBase=null;clearGuardianDraft('receivingForm');
     $('receivingForm').reset(); $('receivingEditId').value=''; $('recordId').value=newRecordId(); $('shipmentDate').value=todayISO(); $('variance').value='0';
     $('customerName').value=isAllCompanies()?'':activeCompany;
     $('receivingForm').dataset.arrivalTime=''; $('receivingForm').dataset.startTime=''; $('receivingForm').dataset.completionTime=''; if($('receivingBookingSlot'))$('receivingBookingSlot').value='';
@@ -1211,6 +1179,7 @@
   }
 
   function populateReceivingForm(record){
+    receivingEditBase=record.updatedAt||null;
     if(activeCompany!==record.customer) setActiveCompany(record.customer, false);
     showSection('receiving');
     $('receivingEditId').value=record.id; $('recordId').value=record.id; $('doNumber').value=record.doNumber; $('poNumber').value=record.poNumber;
@@ -1260,9 +1229,9 @@
     if(!record.staffName){record.staffName=currentUser?.displayName||currentUser?.email||'Warehouse Staff';$('staffName').value=record.staffName;}
     if(action==='complete'&&$('actualQty').value===''){$('actualQty').value=String(record.expectedQty);record.actualQty=record.expectedQty;updateReceivingVariance();}
     if(!validateReceiving(record,true))return;
-    if(action==='arrived'){if(record.arrivalTime){toast('Arrival time is locked and cannot be changed.','warning');return;}record.arrivalTime=nowISO();$('receivingForm').dataset.arrivalTime=record.arrivalTime;}
-    if(action==='start'){if(!record.arrivalTime){showError('receivingError','Click Arrived before Start Receiving.');return;}if(record.startTime){toast('Receiving start time is already recorded.','warning');return;}record.startTime=nowISO();$('receivingForm').dataset.startTime=record.startTime;}
-    if(action==='complete'){if(!record.startTime){showError('receivingError','Click Start Receiving before Complete.');return;}if(record.completionTime){toast('Completion time is already recorded.','warning');return;}if($('actualQty').value===''){showError('receivingError','Enter Actual Received Quantity before completing.');return;}record.actualQty=num($('actualQty').value);record.completionTime=nowISO();$('receivingForm').dataset.completionTime=record.completionTime;}
+    if(action==='arrived'){if(record.arrivalTime){toast('Arrival time is locked and cannot be changed.','warning');return;}record.arrivalTime=nowISO();}
+    if(action==='start'){if(!record.arrivalTime){showError('receivingError','Click Arrived before Start Receiving.');return;}if(record.startTime){toast('Receiving start time is already recorded.','warning');return;}record.startTime=nowISO();}
+    if(action==='complete'){if(!record.startTime){showError('receivingError','Click Start Receiving before Complete.');return;}if(record.completionTime){toast('Completion time is already recorded.','warning');return;}if($('actualQty').value===''){showError('receivingError','Enter Actual Received Quantity before completing.');return;}record.actualQty=num($('actualQty').value);record.completionTime=nowISO();}
     record.updatedAt=nowISO();record.updatedBy=currentUser?.email||'';if(!(await saveReceivingRecord(record,true)))return;
     updateFormStatus(record);updateTimestampInfo(record);updateStatusButtons();startLiveTimerFor(record);
     const status=baseStatus(record);toast(action==='arrived'?'Arrival time recorded.':action==='start'?'Receiving started.':status==='Exceeded 4 Hours'?'Completed, but exceeded 4 hours.':'Receiving completed.',status==='Exceeded 4 Hours'?'warning':'success');
@@ -1274,7 +1243,7 @@
     if(action==='arrived'){if(record.arrivalTime)return;patch.arrivalTime=nowISO();}
     if(action==='start'){if(!record.arrivalTime){toast('Mark Arrived first.','warning');return;}if(record.startTime)return;patch.startTime=nowISO();}
     if(action==='complete'){if(!record.startTime){toast('Start Receiving first.','warning');return;}if(record.completionTime)return;patch.completionTime=nowISO();if(record.actualQty===''||record.actualQty==null)patch.actualQty=num(record.expectedQty);}
-    try{await db.collection('receivings').doc(record.id).set(patch,{merge:true});toast(action==='arrived'?'Shipment marked Arrived.':action==='start'?'Receiving started.':'Receiving completed.','success');}
+    try{await guardian.commit('Receiving:'+record.id,[{ref:db.collection('receivings').doc(record.id),kind:'receiving',requireExists:true,base:record.updatedAt||null,data:patch}]);toast(action==='arrived'?'Shipment marked Arrived.':action==='start'?'Receiving started.':'Receiving completed.','success');}
     catch(err){toast(authErrorMessage(err),'warning');}
   }
 
@@ -1301,7 +1270,7 @@
 
   async function deleteReceiving(id){
     const r=receivingRecords.find(x=>x.id===id);if(!r)return;if(!confirm(`Delete receiving record ${r.doNumber}? This cannot be undone.`))return;
-    try{const linked=discrepancyRecords.filter(d=>d.linkedReceivingId===id);await Promise.all([db.collection('receivings').doc(id).delete(),...linked.map(d=>db.collection('discrepancies').doc(d.id).delete())]);resetReceivingForm();toast('Receiving record deleted.','warning');}
+    try{const linked=discrepancyRecords.filter(d=>d.linkedReceivingId===id);await removeRecordSet([r],linked,'Receiving:'+id);resetReceivingForm();toast('Receiving record deleted.','warning');}
     catch(e){toast(authErrorMessage(e),'warning');}
   }
   function createDiscrepancyFromReceiving(record){
@@ -1313,23 +1282,25 @@
 
   function getDiscrepancyFormRecord(){
     const editId=$('discrepancyEditId').value; const old=editId?discrepancyRecords.find(d=>d.id===editId):null;
-    return {id:editId||newDiscrepancyId(),linkedReceivingId:$('linkedReceivingId').value||old?.linkedReceivingId||'',reportDate:$('reportDate').value,doNumber:$('discDONumber').value.trim(),poNumber:$('discPONumber').value.trim(),customer:$('discCustomer').value.trim(),companyId:companyIdFor($('discCustomer').value.trim()),sku:$('sku').value.trim(),productName:$('productName').value.trim(),expectedQty:num($('discExpectedQty').value),actualQty:num($('discActualQty').value),issueType:$('issueType').value,itemCondition:$('itemCondition').value,actionTaken:$('actionTaken').value,pic:$('personInCharge').value.trim(),remarks:$('discRemarks').value.trim(),photo:selectedPhotoData||old?.photo||'',resolved:old?.resolved||false,createdAt:old?.createdAt||nowISO(),updatedAt:nowISO(),updatedBy:currentUser?.email||''};
+    return {id:editId||(discrepancyDraftId ||= newDiscrepancyId()),linkedReceivingId:$('linkedReceivingId').value||old?.linkedReceivingId||'',reportDate:$('reportDate').value,doNumber:$('discDONumber').value.trim(),poNumber:$('discPONumber').value.trim(),customer:$('discCustomer').value.trim(),companyId:companyIdFor($('discCustomer').value.trim()),sku:$('sku').value.trim(),productName:$('productName').value.trim(),expectedQty:num($('discExpectedQty').value),actualQty:num($('discActualQty').value),issueType:$('issueType').value,itemCondition:$('itemCondition').value,actionTaken:$('actionTaken').value,pic:$('personInCharge').value.trim(),remarks:$('discRemarks').value.trim(),photo:selectedPhotoData||old?.photo||'',resolved:old?.resolved||false,createdAt:old?.createdAt||nowISO(),updatedAt:nowISO(),updatedBy:currentUser?.email||''};
   }
   function validateDiscrepancy(d){
     const missing=[]; const req=[['reportDate','Report Date'],['doNumber','DO Number'],['poNumber','PO Number'],['customer','Customer Name'],['sku','SKU'],['productName','Product Name'],['issueType','Issue Type'],['itemCondition','Item Condition'],['actionTaken','Action Taken'],['pic','Person in Charge']];
     req.forEach(([k,n])=>{if(!d[k])missing.push(n)}); if($('discExpectedQty').value==='')missing.push('Expected Quantity'); if($('discActualQty').value==='')missing.push('Actual Quantity');
-    if(missing.length){showError('discrepancyError','Please complete: '+missing.join(', '));return false;} hideError('discrepancyError');return true;
+    if(missing.length){showError('discrepancyError','Please complete: '+missing.join(', '));return false;} try{ReceivingGuardian.validate('discrepancy',d);}catch(e){showError('discrepancyError',e.message);return false;}hideError('discrepancyError');return true;
   }
   function updateDiscrepancyVariance(){const v=variance($('discExpectedQty').value,$('discActualQty').value);$('discVariance').value=(v>0?'+':'')+v;}
   function resetDiscrepancyForm(){
+    discrepancyDraftId='';discrepancyEditBase=null;clearGuardianDraft('discrepancyForm');
     $('discrepancyForm').reset();$('discrepancyEditId').value='';$('linkedReceivingId').value='';$('reportDate').value=todayISO();$('discCustomer').value=isAllCompanies()?'':activeCompany;$('discVariance').value='0';selectedPhotoData='';$('photoStatus').textContent='';hideError('discrepancyError');$('discFormBadge').textContent='Unresolved';$('discFormBadge').className='status-badge status-discrepancy';applyWorkspaceFormState();
   }
   async function saveDiscrepancy(d){
     const editing=!!$('discrepancyEditId').value;
-    try{await db.collection('discrepancies').doc(d.id).set({...d,updatedServerAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});resetDiscrepancyForm();toast(editing?'Discrepancy report updated.':'Discrepancy report saved.');return true;}
+    try{await guardian.commit('Discrepancy:'+d.id,[{ref:db.collection('discrepancies').doc(d.id),kind:'discrepancy',base:discrepancyEditBase,data:d,parent:d.linkedReceivingId?db.collection('receivings').doc(d.linkedReceivingId):null}]);resetDiscrepancyForm();toast(editing?'Discrepancy report updated.':'Discrepancy report saved.');return true;}
     catch(e){showError('discrepancyError',authErrorMessage(e));return false;}
   }
   function populateDiscrepancyForm(d){
+    discrepancyEditBase=d.updatedAt||null;
     if(activeCompany!==d.customer) setActiveCompany(d.customer, false);
     showSection('discrepancy');$('discrepancyEditId').value=d.id;$('linkedReceivingId').value=d.linkedReceivingId||'';$('reportDate').value=d.reportDate;$('discDONumber').value=d.doNumber;$('discPONumber').value=d.poNumber;$('discCustomer').value=d.customer;$('sku').value=d.sku;$('productName').value=d.productName;$('discExpectedQty').value=d.expectedQty;$('discActualQty').value=d.actualQty;$('issueType').value=d.issueType;$('itemCondition').value=d.itemCondition;$('actionTaken').value=d.actionTaken;$('personInCharge').value=d.pic;$('discRemarks').value=d.remarks||'';selectedPhotoData=d.photo||'';$('photoStatus').textContent=d.photo?'Existing photo attached.':'';$('discFormBadge').textContent=d.resolved?'Resolved':'Unresolved';$('discFormBadge').className='status-badge '+statusClass(d.resolved?'Resolved':'Unresolved');updateDiscrepancyVariance();window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -1338,8 +1309,8 @@
     $('discrepancyCount').textContent=`${rows.length} case${rows.length===1?'':'s'}`;
     $('discrepancyTableBody').innerHTML=rows.length?rows.map(d=>{const v=variance(d.expectedQty,d.actualQty);return `<tr><td>${esc(d.reportDate)}</td><td><strong>${esc(d.doNumber)}</strong></td><td>${esc(d.poNumber)}</td><td>${esc(d.customer)}</td><td>${esc(d.sku)}</td><td>${esc(d.productName)}</td><td>${d.expectedQty}</td><td>${d.actualQty}</td><td style="font-weight:800;color:var(--dark-red)">${v>0?'+':''}${v}</td><td>${esc(d.issueType)}</td><td>${esc(d.itemCondition)}</td><td>${esc(d.actionTaken)}</td><td>${esc(d.pic)}</td><td>${statusBadge(d.resolved?'Resolved':'Unresolved')}</td><td><div class="action-group">${actionButton('view-disc',d.id,'View discrepancy details','view')}${actionButton('edit-disc',d.id,'Edit discrepancy case','edit')}${actionButton('resolve-disc',d.id,d.resolved?'Mark as unresolved':'Mark as resolved','resolve')}${actionButton('print-disc',d.id,'Print discrepancy report','print')}${actionButton('delete-disc',d.id,'Delete discrepancy case','delete')}</div></td></tr>`}).join(''):`<tr class="empty-row"><td colspan="15">No discrepancy reports found.</td></tr>`;
   }
-  async function deleteDiscrepancy(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;if(!confirm(`Delete discrepancy report for ${d.doNumber}?`))return;try{await db.collection('discrepancies').doc(id).delete();toast('Discrepancy report deleted.','warning');}catch(e){toast(authErrorMessage(e),'warning');}}
-  async function toggleResolved(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;try{await db.collection('discrepancies').doc(id).update({resolved:!d.resolved,updatedAt:nowISO(),updatedBy:currentUser?.email||''});toast(!d.resolved?'Case marked as resolved.':'Case marked as unresolved.');}catch(e){toast(authErrorMessage(e),'warning');}}
+  async function deleteDiscrepancy(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;if(!confirm(`Delete discrepancy report for ${d.doNumber}?`))return;try{await guardian.commit('Discrepancy:'+id,[{ref:db.collection('discrepancies').doc(id),base:d.updatedAt||null,remove:true}]);toast('Discrepancy report deleted.','warning');}catch(e){toast(authErrorMessage(e),'warning');}}
+  async function toggleResolved(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;try{await guardian.commit('Discrepancy:'+id,[{ref:db.collection('discrepancies').doc(id),kind:'discrepancy',requireExists:true,base:d.updatedAt||null,data:{resolved:!d.resolved,updatedAt:nowISO(),updatedBy:currentUser?.email||''}}]);toast(!d.resolved?'Case marked as resolved.':'Case marked as unresolved.');}catch(e){toast(authErrorMessage(e),'warning');}}
   function renderDashboard(){
     const rows=filteredReceiving(true); const today=todayISO(); const todayRows=rows.filter(r=>r.shipmentDate===today);
     const pending=rows.filter(r=>baseStatus(r)==='Pending').length, arrived=rows.filter(r=>baseStatus(r)==='Arrived').length, receiving=rows.filter(r=>baseStatus(r)==='Receiving').length,
@@ -1560,6 +1531,108 @@
     toast(isAllCompanies()?'Showing all companies. Select one company to add new data.':`${activeCompany} workspace selected.`,'success');
   }
 
+  function persistGuardianIncident(item){
+    renderGuardianPanel();
+    if(!auth.currentUser||!item.uid)return;
+    const safe={...item};
+    db.collection('guardian_incidents').doc(item.id).set(safe).then(()=>db.collection('guardian_incidents').doc(item.id).get({source:'server'})).then(snap=>{item.persisted=snap.exists;renderGuardianPanel();}).catch(()=>{item.persisted=false;renderGuardianPanel();});
+  }
+  function clearSensitiveViews(){
+    receivingRecords=[];discrepancyRecords=[];accounts=[];
+    ['receivingTableBody','discrepancyTableBody','accountTableBody','statsGrid','todaySummary','modalBody'].forEach(id=>{if($(id))$(id).textContent='';});
+    $('accountsModal')?.classList.remove('show');$('detailModal')?.classList.remove('show');
+    const canvas=$('dailyChart');canvas?.getContext('2d')?.clearRect(0,0,canvas.width,canvas.height);
+    bookingSlotsForDate=new Set();
+    $('guardianPanel')?.remove();$('guardianButton')?.remove();
+  }
+  function watchProfile(user){
+    profileUnsubscribe?.();
+    profileUnsubscribe=db.collection('users').doc(user.uid).onSnapshot({includeMetadataChanges:true},snap=>{
+      if(auth.currentUser?.uid!==user.uid||!guardian.identity)return;
+      if(snap.metadata.fromCache||snap.metadata.hasPendingWrites){guardian.setHealth('Permissions','DEGRADED');return;}
+      try{
+        const next=ReceivingGuardian.profile(snap.data(),user);
+        if(ReceivingGuardian.access(next)!==ReceivingGuardian.access(guardian.identity))throw ReceivingGuardian.fault('guardian/access-changed','Your account access changed. Sign in again to load verified permissions. Unsaved forms have been retained.');
+        guardian.setHealth('Permissions','HEALTHY');
+      }catch(e){
+        preserveGuardianDrafts();guardian.report('Permissions','profile-change',e,'CRITICAL');
+        sessionEpoch++;stopSubscriptions();currentUser=null;guardian.setIdentity(null);clearSensitiveViews();
+        document.body.classList.remove('role-admin','role-staff','role-client');document.body.classList.add('logged-out');
+        window.dispatchEvent(new CustomEvent('wrs-session-ready',{detail:null}));
+        showError('loginError',e.message);
+      }
+    },e=>{guardian.report('Authentication','profile-watch',e);guardian.setHealth('Permissions','DEGRADED');});
+  }
+  function guardianDraftKey(id){return guardian.identity?'wrs_guardian_draft:'+guardian.identity.uid+':'+id:'';}
+  function preserveGuardianDrafts(){
+    if(!guardian.identity)return;
+    ['receivingForm','discrepancyForm','bookingForm'].forEach(id=>{
+      const form=$(id);if(!form)return;
+      const fields={};form.querySelectorAll('input,select,textarea').forEach(el=>{if(el.id&&el.type!=='password'&&el.type!=='file')fields[el.id]=el.value;});
+      try{sessionStorage.setItem(guardianDraftKey(id),JSON.stringify({fields,dataset:{...form.dataset},receivingEditBase,discrepancyEditBase,discrepancyDraftId,bookingDraftId,photo:id==='discrepancyForm'?selectedPhotoData:''}));}
+      catch(e){guardian.report('Drafts','store',e,'WARNING');}
+    });
+  }
+  var restoringSession=false;
+  function clearGuardianDraft(id){if(restoringSession)return;const key=guardianDraftKey(id);if(key)try{sessionStorage.removeItem(key);}catch{}}
+  function restoreGuardianDrafts(){
+    ['receivingForm','discrepancyForm','bookingForm'].forEach(id=>{
+      try{
+        const raw=sessionStorage.getItem(guardianDraftKey(id));if(!raw)return;const saved=JSON.parse(raw),form=$(id);if(!form)return;
+        Object.entries(saved.fields||{}).forEach(([key,value])=>{const el=$(key);if(el&&form.contains(el)&&el.type!=='password'&&el.type!=='file')el.value=value;});
+        Object.assign(form.dataset,saved.dataset||{});
+        if(id==='receivingForm'){receivingEditBase=saved.receivingEditBase;updateFormStatus();updateStatusButtons();}
+        if(id==='discrepancyForm'){discrepancyEditBase=saved.discrepancyEditBase;discrepancyDraftId=saved.discrepancyDraftId;selectedPhotoData=saved.photo||'';}
+        if(id==='bookingForm')bookingDraftId=saved.bookingDraftId;
+      }catch(e){guardian.report('Drafts','restore',e,'WARNING');}
+    });
+  }
+  let guardianHealthPromise=null;
+  async function runGuardianHealthCheck(){
+    if(!currentUser||guardianHealthPromise)return guardianHealthPromise;
+    guardianHealthPromise=(async()=>{
+      try{
+        await guardian.retryRead(()=>auth.currentUser.getIdToken(false),'Authentication');
+        const actor=await guardian.assertAccess(false);guardian.setHealth('Permissions','HEALTHY');
+        let healthy=true;
+        for(const [module,collection] of [['Receiving','receivings'],['Booking','booking_slots'],['Discrepancy','discrepancies']]){
+          if(guardian.identity?.uid!==actor.uid)break;
+          let query=db.collection(collection);if(actor.role==='client'&&collection!=='booking_slots')query=query.where('companyId','==',actor.companyId);
+          try{await guardian.retryRead(async()=>{const snap=await query.limit(1).get({source:'server'});if(snap.metadata.fromCache||snap.metadata.hasPendingWrites)throw ReceivingGuardian.fault('guardian/sync-unconfirmed','Server state is not confirmed.');},module);}catch{healthy=false;}
+        }
+        if(guardian.identity?.uid===actor.uid){guardian.setHealth('Database',healthy?'HEALTHY':'DEGRADED');guardian.setHealth('API',healthy?'HEALTHY':'DEGRADED');}
+      }catch(e){guardian.report('Health','check',e);}
+      renderGuardianPanel();
+    })();
+    try{await guardianHealthPromise;}finally{guardianHealthPromise=null;}
+  }
+  function renderGuardianPanel(){
+    if(!isAdmin())return;
+    if(!$('guardianButton')){
+      const button=document.createElement('button');button.id='guardianButton';button.type='button';button.className='btn btn-sm btn-outline';button.textContent='🛡 Guardian';
+      $('manageAccountsBtn')?.parentElement.appendChild(button);
+      const panel=document.createElement('dialog');panel.id='guardianPanel';panel.style.cssText='width:min(760px,92vw);max-height:85vh;padding:24px;border:1px solid #aab6ca;border-radius:16px;overflow:auto;background:var(--card,#fff);color:var(--text,#17264a);font:14px/1.6 system-ui';
+      panel.innerHTML='<h2>Receiving App Guardian</h2><p>Monitoring this active session. Server enforcement and unattended monitoring: NOT VERIFIED.</p><p id="guardianHealth"></p><button type="button" id="guardianCheck">Run health check</button> <button type="button" id="guardianClose">Close</button> <button type="button" id="guardianHistoryButton">Load incident history</button><pre id="guardianHistory" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre><h3>Session incidents</h3><pre id="guardianIncidents" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>';
+      document.body.appendChild(panel);button.onclick=()=>{if(isAdmin()){renderGuardianPanel();setMenuOpen(false);panel.showModal();}};
+      $('guardianHistoryButton').onclick=async()=>{
+        const target=$('guardianHistory');target.textContent='Loading confirmed incident history…';
+        try{const actor=await guardian.assertAccess(false);if(actor.role!=='admin')return;
+          const snap=await guardian.retryRead(()=>db.collection('guardian_incidents').orderBy('at','desc').limit(50).get({source:'server'}),'Incident history');
+          if(isAdmin()&&guardian.identity?.uid===actor.uid)target.textContent=snap.docs.map(d=>JSON.stringify(d.data(),null,2)).join('\n\n')||'No saved incidents.';
+        }catch(e){if(isAdmin())target.textContent='Incident history could not be verified: '+e.message;}
+      };
+      $('guardianClose').onclick=()=>panel.close();$('guardianCheck').onclick=()=>{if(isAdmin())runGuardianHealthCheck();};
+    }
+    $('guardianHealth').textContent=Object.entries(guardian.health).map(([name,h])=>name+': '+h.state+' ('+h.checkedAt+')').join(' | ')||'No checks completed yet.';
+    $('guardianIncidents').textContent=guardian.incidents.map(i=>`${i.id}\n${i.at} • ${i.severity} • ${i.module} / ${i.action}\n${i.code}: ${i.message}\n${i.result} • Server log: ${i.persisted?'saved':'not confirmed'}\n`).join('\n')||'No incidents recorded in this session.';
+  }
+  document.addEventListener('input',e=>{if(e.target.closest('#receivingForm,#discrepancyForm,#bookingForm'))preserveGuardianDrafts();});
+  window.addEventListener('beforeunload',e=>{preserveGuardianDrafts();if(guardian.locks.size){e.preventDefault();e.returnValue='';}});
+  window.addEventListener('error',e=>guardian.report('Application','uncaught',e.error||new Error('Script or asset failed to load.')));
+  window.addEventListener('unhandledrejection',e=>guardian.report('Application','unhandled',e.reason));
+  window.addEventListener('online',()=>{runGuardianHealthCheck();if(currentUser)subscribeOnlineData();});
+  setInterval(()=>{if(document.visibilityState==='visible')runGuardianHealthCheck();},60000);
+
   $('companyWorkspace').addEventListener('change',e=>setActiveCompany(e.target.value));
   $('addCompanyBtn').addEventListener('click',openAddCompanyPanel);
   $('saveNewCompanyBtn').addEventListener('click',addNewCompany);
@@ -1665,21 +1738,7 @@
       const cred=await auth.signInWithEmailAndPassword(email,password);
       await openUserSession(cred.user,true,loginHint);
     }catch(err){
-      const code=String(err?.code||'');
-      const slug=loginSlug(loginHint);
-      const company=COMPANIES.find(c=>loginSlug(c)===slug)||loginHint;
-      const defaultClientPassword=companyDefaultPassword(company);
-      const canBootstrap=(slug==='staff'&&password==='Warehouse@2026')||(slug!=='admin'&&!loginHint.includes('@')&&password===defaultClientPassword);
-      if(canBootstrap&&(code.includes('user-not-found')||code.includes('invalid-credential'))){
-        try{
-          const cred=await auth.createUserWithEmailAndPassword(email,password);
-          await openUserSession(cred.user,true,loginHint);
-          toast('Online login created and ready.','success');
-          return;
-        }catch(createErr){err=createErr;}
-      }
-      let message=authErrorMessage(err);
-      if(slug==='admin')message+=' Admin login: admin / Admin@2026.';
+      const message=authErrorMessage(err);
       showError('loginError',message);
     }
   });
@@ -1693,15 +1752,16 @@
   $('accountTableBody').addEventListener('click',async e=>{const b=e.target.closest('[data-account-action]');if(!b||!isAdmin())return;const acc=accounts.find(a=>a.uid===b.dataset.uid);if(!acc)return;
     if(b.dataset.accountAction==='copy'){const text=`Warehouse Receiving Sheet\nEmail: ${acc.email}\nCompany: ${acc.role==="client"?(acc.companyName||companyNameFromId(acc.companyId)):"All Companies"}\nRole: ${acc.role}`;navigator.clipboard?.writeText(text).then(()=>toast('Login information copied.')).catch(()=>prompt('Copy:',text));}
     if(b.dataset.accountAction==='reset'){try{await auth.sendPasswordResetEmail(acc.email);toast('Password reset email sent.');}catch(err){toast(authErrorMessage(err),'warning');}}
-    if(b.dataset.accountAction==='toggle'){try{await db.collection('users').doc(acc.uid).update({active:!acc.active,updatedAt:nowISO(),updatedBy:currentUser.email});}catch(err){toast(authErrorMessage(err),'warning');}}
-    if(b.dataset.accountAction==='save-role'){try{const select=$(`.account-role-select[data-uid="${CSS.escape(acc.uid)}"]`);await updateAccountRoleFromAdmin(acc,select?.value||acc.role);toast(`Role updated for ${acc.email}.`,'success');}catch(err){toast(authErrorMessage(err),'warning');}}
+    if(b.dataset.accountAction==='toggle'){try{const auditRef=db.collection('guardian_role_audit').doc(),at=nowISO();await guardian.commit('Permissions:'+acc.uid,[{ref:db.collection('users').doc(acc.uid),requireExists:true,base:acc.updatedAt||null,data:{active:!acc.active,roleAuditId:auditRef.id,updatedAt:at,updatedBy:currentUser.email}},{ref:auditRef,create:true,data:{actorUid:currentUser.uid,targetUid:acc.uid,previousRole:acc.role,newRole:acc.role,previousActive:acc.active!==false,newActive:!acc.active,at,action:'explicit-admin-access-change'}}],{admin:true});}catch(err){toast(authErrorMessage(err),'warning');}}
+    if(b.dataset.accountAction==='save-role'){try{const select=document.querySelector(`.account-role-select[data-uid="${CSS.escape(acc.uid)}"]`);await updateAccountRoleFromAdmin(acc,select?.value||acc.role);toast(`Role updated for ${acc.email}.`,'success');}catch(err){toast(authErrorMessage(err),'warning');}}
   });
 
   applyTheme(currentTheme,false);mergeCompanyNames();updateWorkspaceUI();resetReceivingForm();resetDiscrepancyForm();resetBookingForm();renderReceivingTable();renderDiscrepancyTable();renderDashboard();refreshDatalists();
   auth.onAuthStateChanged(async user=>{
-    if(!user){stopSubscriptions();currentUser=null;document.body.className='logged-out';applyTheme(currentTheme,false);return;}
+    if(!user){sessionEpoch++;profileUnsubscribe?.();profileUnsubscribe=null;stopSubscriptions();currentUser=null;guardian.setIdentity(null);clearSensitiveViews();document.body.className='logged-out';applyTheme(currentTheme,false);return;}
     if(currentUser?.uid===user.uid)return;
     try{await openUserSession(user,false,localStorage.getItem(LAST_LOGIN_HINT_KEY)||user.email||'');}catch(err){showError('loginError',err.message);document.body.className='logged-out';applyTheme(currentTheme,false);}
   });
 
 })();
+

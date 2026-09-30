@@ -99,19 +99,8 @@
   function isBooking(r){return r&&r.source==='client-booking'}
 
   async function resolveAdmin(user){
-    if(!user)return false;
-    const email=String(user.email||'').toLowerCase();
-    if(ADMIN_EMAILS.has(email))return true;
-    try{
-      const db=firebase.firestore();
-      const direct=await db.collection('users').doc(user.uid).get();
-      if(direct.exists&&String(direct.data().role||'').toLowerCase()==='admin')return true;
-      if(email){
-        const q=await db.collection('users').where('email','==',email).limit(1).get();
-        if(!q.empty&&String(q.docs[0].data().role||'').toLowerCase()==='admin')return true;
-      }
-    }catch(e){}
-    return false;
+    if(!user||!window.wrsGuardian?.identity)return false;
+    try{const profile=await window.wrsGuardian.assertAccess(false);return profile.uid===user.uid&&profile.role==='admin';}catch{return false;}
   }
 
   function mount(){
@@ -261,8 +250,9 @@
 
   function subscribe(){
     state.unsubscribe?.();state.unsubscribe=null;state.firstSnapshot=true;
-    const db=firebase.firestore();
+    const db=firebase.firestore(),identity=window.wrsGuardian?.identity;
     state.unsubscribe=db.collection('receivings').onSnapshot(snap=>{
+      if(!state.admin||window.wrsGuardian?.identity!==identity)return;
       const all=snap.docs.map(d=>({id:d.data().id||d.id,...d.data()})).filter(isBooking);state.bookings=all;rebuildUnread();
       if(state.firstSnapshot){state.firstSnapshot=false;renderCenter();renderNotifications();updateNotificationUI();if(state.unread.size){showLiveToast(null,`${state.unread.size} new booking${state.unread.size===1?'':'s'}`,'Open Booking Control to review customer bookings received since this feature was enabled.')}return}
       snap.docChanges().forEach(change=>{if(change.type==='added'){const data={id:change.doc.data().id||change.doc.id,...change.doc.data()};if(isBooking(data))handleNewBooking(data)}});renderCenter();renderNotifications();updateNotificationUI();
@@ -273,6 +263,8 @@
     state.user=user;const admin=await resolveAdmin(user);if(user!==state.user)return;
     if(!admin){state.admin=false;unmount();return}state.admin=true;loadRead();featureStart();mount();subscribe();
   }
+  window.addEventListener('wrs-session-ready',e=>{if(!e.detail){state.user=null;state.admin=false;state.bookings=[];unmount();}else onAuth(firebase.auth().currentUser);});
   function boot(){if(!window.firebase||!firebase.auth||!firebase.firestore){setTimeout(boot,180);return}firebase.auth().onAuthStateChanged(onAuth)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
+

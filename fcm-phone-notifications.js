@@ -73,38 +73,8 @@
   }
 
   async function getProfileData(user){
-    const profile={displayName:user?.displayName||'',role:'',companyId:'',companyName:'',active:true};
-    try{
-      const db=firebase.firestore();
-      const direct=await db.collection('users').doc(user.uid).get();
-      if(direct.exists){
-        const data=direct.data()||{};
-        profile.displayName=data.displayName||data.name||profile.displayName;
-        profile.role=data.role||profile.role;
-        profile.companyId=data.companyId||profile.companyId;
-        profile.companyName=data.companyName||profile.companyName;
-        if(typeof data.active==='boolean')profile.active=data.active;
-      }
-      if(user.email && (!profile.role || !profile.displayName)){
-        const q=await db.collection('users').where('email','==',user.email).limit(5).get();
-        q.docs.forEach(doc=>{
-          const data=doc.data()||{};
-          if(!profile.displayName)profile.displayName=data.displayName||data.name||'';
-          if(!profile.role)profile.role=data.role||'';
-          if(!profile.companyId)profile.companyId=data.companyId||'';
-          if(!profile.companyName)profile.companyName=data.companyName||'';
-          if(typeof data.active==='boolean')profile.active=data.active;
-        });
-      }
-    }catch(e){}
-
-    const email=String(user?.email||'').toLowerCase();
-    const pinnedRole=PINNED_ROLE_BY_EMAIL[email]||'';
-    if(pinnedRole){profile.role=pinnedRole;profile.companyId='ALL';profile.companyName='All Companies';}
-    else if(!profile.role && email==='ednvines@gmail.com')profile.role='admin';
-    else if(!profile.role && email==='staff@warehouse-client.com')profile.role='staff';
-    if(!profile.displayName)profile.displayName=String(user?.email||'User').split('@')[0];
-    return profile;
+    if(!window.wrsGuardian)throw new Error('Account verification is unavailable.');
+    return window.wrsGuardian.readProfile(user);
   }
 
   async function getProfileName(user){
@@ -126,11 +96,7 @@
         pushTransport:'fcm-web-v12-native-sw',
         lastPushRegisteredAt:new Date().toISOString()
       };
-      if(profile.role)payload.role=profile.role;
-      if(profile.companyId)payload.companyId=profile.companyId;
-      if(profile.companyName)payload.companyName=profile.companyName;
-      if(typeof profile.active==='boolean')payload.active=profile.active;
-      await db.collection('users').doc(user.uid).set(payload,{merge:true});
+      await db.collection('users').doc(user.uid).update(payload);
       return true;
     }catch(e){
       console.warn('Push token created but Firestore save was blocked.',e);
@@ -479,3 +445,4 @@
 
   boot();
 })();
+
