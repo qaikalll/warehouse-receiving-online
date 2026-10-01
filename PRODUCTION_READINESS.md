@@ -57,6 +57,15 @@ Local final run on 2026-10-01:
 - Actual HTTP Auth/Functions integration: **blocked locally**, because the execution sandbox rejects the Functions runtime Unix socket (`EPERM`). Three tests are included in GitHub CI; no local pass is claimed.
 - Final release gate: **FAIL as intended**, missing source-matching production evidence. Existing local passing tests are listed above; an absent signed-off evidence record is not a failed test result.
 
-GitHub CI results will be linked after the continuation is saved to the existing draft PR.
+GitHub CI **regression job PASS** for code commit `505b212b2bb02767e5551f5071934bce2c746b41`: all 35 regression tests, 33 rules/server emulator tests, 13 browser scenario outputs and **3/3 real HTTP Auth/Functions emulator integration tests** passed. The HTTP tests verify anonymous/Client rejection, authenticated save/replay/delete/restore, and database role recheck with a still-valid older token. The separate **production-readiness job FAIL** is confirmed from its logs: required production evidence is missing.
+
+Evidence: https://github.com/qaikalll/warehouse-receiving-online/actions/runs/36800422234
+Existing draft PR: https://github.com/qaikalll/warehouse-receiving-online/pull/1
+
+The prior run stopped after Guardian core and local/CI core verification (33 regression, 8 rules emulator, 13 browser scenario outputs), before production configuration, backend concurrency protection, migration rehearsal and unattended monitoring. That existing core was preserved. This continuation adds a trusted transaction boundary where it was missing; it does not reconstruct the app.
+
+Additional confirmed defects were frontend enumeration unable to exclude concurrently created linked records, stale restore/save receipts being mistaken for current success, missing atomic booking-slot movement on date edits, and Client workspace controls remaining enabled until the first subscription response. The new regression cases exercise those mechanisms. Historical production incidents still cannot be attributed without production logs.
+
+No unrelated feature, UI page, or existing record was removed. No production deploy, data migration, rule replacement, role change, backup restore or GitHub settings change was performed. The branch requires coordinated backend/rules/frontend setup and remains unsuitable for standalone frontend deployment.
 
 The release gate requires source-matching, dated evidence for production rules, profiles, migrations, restore, integration, monitoring, branch protection and Pages deployment enforcement. Passing emulators does not substitute for those records. Missing evidence remains a failure. No production records, rules, settings or deployments have been modified.
