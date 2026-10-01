@@ -15,18 +15,38 @@ service cloud.firestore {
     function requestId(d) { return d.guardianRequestId is string && d.guardianRequestId.size() <= 100; }
     function baseRecord(d) {
       return requestId(d) && text(d.doNumber) && text(d.poNumber) && text(d.companyId)
-        && text(d.customer) && qty(d.expectedQty) && d.updatedAt is string;
+        && text(d.customer) && qty(d.expectedQty) && instant(d.updatedAt);
     }
+    function validDay(v) {
+      return v is string && v.matches('^[0-9]{4}-((01|03|05|07|08|10|12)-(0[1-9]|[12][0-9]|3[01])|(04|06|09|11)-(0[1-9]|[12][0-9]|30)|02-(0[1-9]|1[0-9]|2[0-9]))$')
+        && int(v[0:4])>=1 && (v[5:10]!='02-29' || (int(v[0:4])%4==0 && (int(v[0:4])%100!=0 || int(v[0:4])%400==0)));
+    }
+    function instant(v) {
+      return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9][.][0-9]{3}Z$') && validDay(v[0:10]);
+    }
+    function futureBooking(d) {
+      return timestamp.date(int(d.shipmentDate[0:4]),int(d.shipmentDate[5:7]),int(d.shipmentDate[8:10]))
+        > (request.time + duration.value(8,'h')).date();
+    }
+    function notDeleted(collection,id) { return !exists(/databases/$(database)/documents/guardian_tombstones/$(collection+'__'+id)); }
+    function receivingFields() { return ['id','doNumber','poNumber','customer','companyId','shipmentDate','vehicleNumber','transportType','expectedQty','actualQty','staffName','remarks','arrivalTime','startTime','completionTime','createdAt','updatedAt','updatedBy','source','bookingSlot','bookingSlotStart','bookingSlotEnd','bookingCreatedAt','bookedBy','bookingStatus','guardianDoKey','guardianRequestId','guardianActorUid','guardianLinkVersion']; }
     function receiving(d) {
-      return baseRecord(d) && d.shipmentDate is string && d.shipmentDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+      return baseRecord(d) && validDay(d.shipmentDate)
         && text(d.vehicleNumber) && text(d.transportType)
+        && d.get('staffName','') is string && d.get('remarks','') is string
+        && d.get('remarks','').size()<=20000
+        && d.get('source','') is string && d.get('bookingStatus','') is string
+        && instant(d.get('createdAt',d.updatedAt))
         && (d.actualQty == '' || qty(d.actualQty))
         && d.arrivalTime is string && d.startTime is string && d.completionTime is string
         && (d.startTime == '' || (d.arrivalTime != '' && d.startTime >= d.arrivalTime))
         && (d.completionTime == '' || (d.startTime != '' && d.completionTime >= d.startTime && qty(d.actualQty)));
     }
     function transition(a,b) {
-      return (a.arrivalTime == '' || a.arrivalTime == b.arrivalTime)
+      return (a.arrivalTime == b.arrivalTime || instant(b.arrivalTime))
+        && (a.startTime == b.startTime || instant(b.startTime))
+        && (a.completionTime == b.completionTime || instant(b.completionTime))
+        && (a.arrivalTime == '' || a.arrivalTime == b.arrivalTime)
         && (a.startTime == '' || a.startTime == b.startTime)
         && (a.completionTime == '' || a.completionTime == b.completionTime)
         && (a.arrivalTime != '' || b.startTime == '')
@@ -82,14 +102,17 @@ service cloud.firestore {
     }
     match /receivings/{id} {
       allow read: if canRead(resource.data);
-      allow create: if receiving(request.resource.data) && reserved(request.resource.data,id)
+      allow create: if request.resource.data.keys().hasOnly(receivingFields()) && request.resource.data.get('id',id)==id && notDeleted('receivings',id) && request.resource.data.updatedBy == request.auth.token.email && request.resource.data.guardianActorUid == request.auth.uid && receiving(request.resource.data) && reserved(request.resource.data,id)
+        && (request.resource.data.arrivalTime == '' || instant(request.resource.data.arrivalTime))
         && request.resource.data.startTime == '' && request.resource.data.completionTime == ''
         && (editor() || (ownCompany(request.resource.data) && request.resource.data.source == 'client-booking'
           && request.resource.data.arrivalTime == '' && request.resource.data.bookedBy == request.auth.token.email
-          && bookedReceiving(request.resource.data,id)));
-      allow update: if editor() && receiving(request.resource.data) && transition(resource.data,request.resource.data)
-        && reserved(request.resource.data,id);
-      allow delete: if editor();
+          && futureBooking(request.resource.data) && bookedReceiving(request.resource.data,id)));
+      allow update: if editor() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(receivingFields()) && request.resource.data.get('id',id)==id && receiving(request.resource.data) && transition(resource.data,request.resource.data)
+        && reserved(request.resource.data,id) && request.resource.data.updatedBy == request.auth.token.email && request.resource.data.guardianActorUid == request.auth.uid
+        && request.resource.data.get('guardianLinkVersion',0) == resource.data.get('guardianLinkVersion',0)
+        && (request.resource.data.get('bookingSlotStart','') == '' || bookedReceiving(request.resource.data,id));
+      allow delete: if false; // Only the trusted archive-and-delete transaction may delete.
     }
     match /guardian_do_keys/{key} {
       allow read: if active();
@@ -103,14 +126,7 @@ service cloud.firestore {
     }
     match /discrepancies/{id} {
       allow read: if canRead(resource.data);
-      allow create,update: if editor() && baseRecord(request.resource.data) && qty(request.resource.data.actualQty)
-        && request.resource.data.reportDate is string && request.resource.data.reportDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && text(request.resource.data.sku) && text(request.resource.data.productName) && text(request.resource.data.issueType)
-        && text(request.resource.data.itemCondition) && text(request.resource.data.actionTaken) && text(request.resource.data.pic)
-        && request.resource.data.resolved is bool
-        && (request.resource.data.photo == '' || (request.resource.data.photo is string && request.resource.data.photo.size() <= 700000 && request.resource.data.photo.matches('^data:image/(jpeg|png|webp);base64,.*$')))
-        && (request.resource.data.linkedReceivingId == '' || getAfter(/databases/$(database)/documents/receivings/$(request.resource.data.linkedReceivingId)).data.companyId == request.resource.data.companyId);
-      allow delete: if editor();
+      allow create,update,delete: if false; // Trusted callable updates the parent concurrency fence atomically.
     }
     match /booking_slots/{id} {
       allow read: if active();
@@ -120,7 +136,8 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/receivings/$(request.resource.data.receivingId)).data.shipmentDate == request.resource.data.date
         && getAfter(/databases/$(database)/documents/receivings/$(request.resource.data.receivingId)).data.bookingSlotStart == request.resource.data.slotStart
         && (editor() || getAfter(/databases/$(database)/documents/receivings/$(request.resource.data.receivingId)).data.companyId == user().companyId);
-      allow delete: if editor();
+      allow delete: if editor() && existsAfter(/databases/$(database)/documents/receivings/$(resource.data.receivingId))
+        && slotId(getAfter(/databases/$(database)/documents/receivings/$(resource.data.receivingId)).data.shipmentDate, getAfter(/databases/$(database)/documents/receivings/$(resource.data.receivingId)).data.bookingSlotStart) != id;
     }
     match /companies/{id} { allow read: if active(); allow write: if admin(); }
     match /returns/{id} {
@@ -130,6 +147,13 @@ service cloud.firestore {
         && qty(request.resource.data.totalQty) && request.resource.data.status in ['Pending Inspection','Pending Client Decision','Completed'];
       allow delete: if editor();
     }
+    match /guardian_tombstones/{id} { allow read: if editor(); allow write: if false; }
+    match /guardian_health/{id} { allow read: if admin(); allow write: if false; }
+    match /guardian_server_incidents/{id} { allow read: if admin(); allow write: if false; }
+    match /guardian_config/{id} { allow read: if admin(); allow write: if false; }
+    match /guardian_operations/{id} { allow read,write: if false; }
+    match /guardian_backups/{document=**} { allow read,write: if false; }
+    match /guardian_migrations/{document=**} { allow read,write: if false; }
     match /guardian_incidents/{id} {
       allow read: if admin() || (active() && resource.data.uid == request.auth.uid);
       allow create: if active() && request.resource.data.uid == request.auth.uid

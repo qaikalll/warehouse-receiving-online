@@ -41,7 +41,7 @@
     if (kind === 'discrepancy' && next.photo && (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(next.photo) || next.photo.length>700000)) throw fault('guardian/invalid-photo', 'The evidence photo is invalid or too large.');
     if (kind === 'return' && (!next.tracking || !Array.isArray(next.items) || !next.items.length || next.items.some(i=>!i.sku || !quantity(i.qty) || i.qty<1))) throw fault('guardian/invalid-data', 'Return items need SKU and valid quantity.');
   }
-  function create({db,auth,stamp=()=>new Date().toISOString(),sleep=ms=>new Promise(r=>setTimeout(r,ms)),timeoutMs=15000,onIncident=()=>{},onHealth=()=>{}}) {
+  function create({db,auth,stamp=()=>new Date().toISOString(),sleep=ms=>new Promise(r=>setTimeout(r,ms)),timeoutMs=15000,callRemote=null,onIncident=()=>{},onHealth=()=>{}}) {
     const locks=new Map(), incidents=[], health={}, jobs=new Map();
     let identity=null, generation=0;
     const uuid=()=>globalThis.crypto.randomUUID();
@@ -124,7 +124,7 @@
               if(op.remove){tx.delete(op.ref);continue;}
               const next={...old,...op.data,guardianRequestId:job.id};
               validate(op.kind,next,old);
-              tx.set(op.ref,{...op.data,guardianRequestId:job.id},{merge:true});
+              tx.set(op.ref,{...op.data,guardianRequestId:job.id,guardianActorUid:actor.uid},{merge:true});
             }
           });
           for(let attempt=0;;attempt++){try{await transact();break;}catch(e){if(!temporary.has(e.code)||attempt===2)throw e;if(!incident)incident=report(key.split(':')[0],'retry',e,'WARNING',{...evidence(),guardianAction:'RETRY_SAME_REQUEST'});setHealth(key.split(':')[0],'RECOVERING');await sleep(300*2**attempt);}}
@@ -143,8 +143,27 @@
         }
       });
     }
+    async function remote(key,method,payload,{admin=false}={}) {
+      return run(key,async()=>{
+        const actor=await assertAccess();if(admin&&actor.role!=='admin')throw fault('permission-denied','Admin access required.');
+        if(!callRemote)throw fault('guardian/backend-unavailable','Protected operations are not available yet. Nothing was changed. Contact an administrator.');
+        let job=jobs.get(key);if(!job){job={id:uuid(),method,payload:JSON.parse(JSON.stringify(payload))};jobs.set(key,job);}
+        if(job.method!==method)throw fault('guardian/busy','Verify the previous operation before starting another.');
+        const epoch=generation;
+        try{
+          const result=await retryRead(async()=>{try{const result=await callRemote(job.method,{...job.payload,operationId:job.id});if(!result?.verified||result.operationId!==job.id)throw fault('guardian/verification-failed','The server did not confirm this operation.');return result;}catch(e){if(String(e.code||'').startsWith('functions/'))e.code=e.code.slice(10);throw e;}},key.split(':')[0]);
+          if(!result?.verified||result.operationId!==job.id)throw fault('guardian/verification-failed','The server did not confirm this operation.');
+          if(epoch!==generation)throw fault('guardian/session-changed','Session changed. Reopen the record to verify the saved result.');
+          jobs.delete(key);setHealth(key.split(':')[0],'HEALTHY');return result;
+        }catch(e){report(key.split(':')[0],method,e,'ERROR',{requestId:job.id});
+          // Retain the exact request across any uncertain server/transport failure.
+          if(['permission-denied','invalid-argument','failed-precondition','already-exists','not-found'].includes(e.code))jobs.delete(key);
+          throw e;
+        }
+      });
+    }
     function isolate(module,fn) {try{return fn();}catch(e){report(module,'render',e);setHealth(module,'DEGRADED');}}
-    return {readProfile,setIdentity,assertAccess,commit,run,retryRead,report,setHealth,isolate,incidents,health,locks,get identity(){return identity;}};
+    return {readProfile,setIdentity,assertAccess,commit,remote,run,retryRead,report,setHealth,isolate,incidents,health,locks,get identity(){return identity;}};
   }
   return {create,profile,access,validate,validDate,quantity,stage,fault,claimKey};
 });

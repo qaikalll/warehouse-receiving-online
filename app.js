@@ -13,7 +13,11 @@
   const firebaseApp = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-  const guardian = ReceivingGuardian.create({db,auth,onIncident:item=>persistGuardianIncident(item),onHealth:()=>renderGuardianPanel()});
+  const guardian = ReceivingGuardian.create({db,auth,callRemote:async(method,payload)=>{
+    const region=window.RECEIVING_GUARDIAN_CONFIG?.functionsRegion;
+    if(!region||!firebaseApp.functions)throw ReceivingGuardian.fault('failed-precondition','Protected operations are not available yet. Nothing was changed. Contact an administrator.');
+    const response=await firebaseApp.functions(region).httpsCallable(method)(payload);return response.data;
+  },onIncident:item=>persistGuardianIncident(item),onHealth:()=>renderGuardianPanel()});
   window.wrsGuardian=guardian;
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e=>guardian.report('Authentication','persistence',e));
   const RECEIVING_KEY = 'wrs_receiving_records_v1';
@@ -158,9 +162,8 @@
     }catch(e){guardian.report('Permissions','create-account',e,'CRITICAL');/* A cross-service Auth/Firestore outcome can be uncertain: never delete the new identity automatically. */throw e;}finally{if(secondary)await secondary.delete().catch(()=>{});}
   }
   async function removeRecordSet(rec,disc,key){
-    const ops=[...rec.map(r=>({ref:db.collection('receivings').doc(r.id),base:r.updatedAt||null,remove:true})),...disc.map(d=>({ref:db.collection('discrepancies').doc(d.id),base:d.updatedAt||null,remove:true})),...rec.map(r=>({ref:receivingClaim(r).ref,remove:true,owner:r.id}))];
-    if(ops.length>100)throw new Error('This deletion needs an administrator-maintained batch with a verified backup. No records were deleted.');
-    if(ops.length)await guardian.commit(key,ops);
+    if(!rec.length&&!disc.length)return;
+    await guardian.remote(key,'guardianDeleteRecords',{receiving:rec.map(r=>({id:r.id,updatedAt:r.updatedAt||null})),discrepancies:disc.map(d=>({id:d.id,updatedAt:d.updatedAt||null})),scope:key==='Receiving:clear-all'?'all':'selected'});
   }
   async function clearWorkspaceData(name){
     await removeRecordSet(receivingRecords.filter(r=>r.customer===name),discrepancyRecords.filter(d=>d.customer===name),'Receiving:clear-workspace');
@@ -285,6 +288,7 @@
     $('signedInUser').textContent=`${currentUser.displayName} · ${currentUser.role.toUpperCase()}`;
     if(currentUser.role==='client')activeCompany=currentUser.company;else if(activeCompany!==ALL_COMPANIES&&!COMPANIES.includes(activeCompany))activeCompany=ALL_COMPANIES;
     localStorage.setItem(ACTIVE_COMPANY_KEY,activeCompany);
+    updateWorkspaceUI();
     restoringSession=true;
     applyTheme(currentTheme,false);mergeCompanyNames(currentUser.role==='client'?[currentUser.company]:[]);resetReceivingForm();resetDiscrepancyForm();subscribeOnlineData();resetBookingForm();
     restoringSession=false;restoreGuardianDrafts();
@@ -1153,6 +1157,14 @@
     if(existing.docs.some(d=>d.id!==record.id&&String(d.data().doNumber||'').trim().toLowerCase()===record.doNumber.trim().toLowerCase()))throw new Error('This DO Number already exists for this company.');
     const ops=[{ref:db.collection('receivings').doc(record.id),kind:'receiving',base:receivingEditBase,data:record},receivingClaim(record)];
     const old=receivingRecords.find(r=>r.id===record.id);
+    if(old?.bookingSlotStart&&old.shipmentDate!==record.shipmentDate){
+      const slot=BOOKING_TIME_SLOTS.find(s=>s.start===old.bookingSlotStart&&!s.breakTime);
+      if(!slot||old.bookingSlotEnd!==slot.end)throw new Error('The existing booking slot is invalid. Review it before rescheduling.');
+      Object.assign(record,{bookingSlotStart:slot.start,bookingSlotEnd:slot.end,bookingSlot:slot.label});
+      if(old.source)record.source=old.source;
+      ops.push({ref:db.collection('booking_slots').doc(bookingSlotDocId(old.shipmentDate,old.bookingSlotStart)),remove:true,owner:record.id});
+      ops.push({ref:db.collection('booking_slots').doc(bookingSlotDocId(record.shipmentDate,slot.start)),slot:true,data:{date:record.shipmentDate,slotStart:slot.start,slotEnd:slot.end,slotLabel:slot.label,booked:true,receivingId:record.id,updatedAt:record.updatedAt}});
+    }
     if(old&&receivingClaim(old).ref.path!==receivingClaim(record).ref.path)ops.push({ref:receivingClaim(old).ref,remove:true,owner:record.id});
     return ops;
   }
@@ -1296,7 +1308,7 @@
   }
   async function saveDiscrepancy(d){
     const editing=!!$('discrepancyEditId').value;
-    try{await guardian.commit('Discrepancy:'+d.id,[{ref:db.collection('discrepancies').doc(d.id),kind:'discrepancy',base:discrepancyEditBase,data:d,parent:d.linkedReceivingId?db.collection('receivings').doc(d.linkedReceivingId):null}]);resetDiscrepancyForm();toast(editing?'Discrepancy report updated.':'Discrepancy report saved.');return true;}
+    try{await guardian.remote('Discrepancy:'+d.id,'guardianSaveDiscrepancy',{id:d.id,base:discrepancyEditBase,data:d});resetDiscrepancyForm();toast(editing?'Discrepancy report updated.':'Discrepancy report saved.');return true;}
     catch(e){showError('discrepancyError',authErrorMessage(e));return false;}
   }
   function populateDiscrepancyForm(d){
@@ -1309,8 +1321,8 @@
     $('discrepancyCount').textContent=`${rows.length} case${rows.length===1?'':'s'}`;
     $('discrepancyTableBody').innerHTML=rows.length?rows.map(d=>{const v=variance(d.expectedQty,d.actualQty);return `<tr><td>${esc(d.reportDate)}</td><td><strong>${esc(d.doNumber)}</strong></td><td>${esc(d.poNumber)}</td><td>${esc(d.customer)}</td><td>${esc(d.sku)}</td><td>${esc(d.productName)}</td><td>${d.expectedQty}</td><td>${d.actualQty}</td><td style="font-weight:800;color:var(--dark-red)">${v>0?'+':''}${v}</td><td>${esc(d.issueType)}</td><td>${esc(d.itemCondition)}</td><td>${esc(d.actionTaken)}</td><td>${esc(d.pic)}</td><td>${statusBadge(d.resolved?'Resolved':'Unresolved')}</td><td><div class="action-group">${actionButton('view-disc',d.id,'View discrepancy details','view')}${actionButton('edit-disc',d.id,'Edit discrepancy case','edit')}${actionButton('resolve-disc',d.id,d.resolved?'Mark as unresolved':'Mark as resolved','resolve')}${actionButton('print-disc',d.id,'Print discrepancy report','print')}${actionButton('delete-disc',d.id,'Delete discrepancy case','delete')}</div></td></tr>`}).join(''):`<tr class="empty-row"><td colspan="15">No discrepancy reports found.</td></tr>`;
   }
-  async function deleteDiscrepancy(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;if(!confirm(`Delete discrepancy report for ${d.doNumber}?`))return;try{await guardian.commit('Discrepancy:'+id,[{ref:db.collection('discrepancies').doc(id),base:d.updatedAt||null,remove:true}]);toast('Discrepancy report deleted.','warning');}catch(e){toast(authErrorMessage(e),'warning');}}
-  async function toggleResolved(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;try{await guardian.commit('Discrepancy:'+id,[{ref:db.collection('discrepancies').doc(id),kind:'discrepancy',requireExists:true,base:d.updatedAt||null,data:{resolved:!d.resolved,updatedAt:nowISO(),updatedBy:currentUser?.email||''}}]);toast(!d.resolved?'Case marked as resolved.':'Case marked as unresolved.');}catch(e){toast(authErrorMessage(e),'warning');}}
+  async function deleteDiscrepancy(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;if(!confirm(`Delete discrepancy report for ${d.doNumber}?`))return;try{await removeRecordSet([], [d], 'Discrepancy:'+id);toast('Discrepancy report deleted.','warning');}catch(e){toast(authErrorMessage(e),'warning');}}
+  async function toggleResolved(id){const d=discrepancyRecords.find(x=>x.id===id);if(!d)return;try{await guardian.remote('Discrepancy:'+id,'guardianSaveDiscrepancy',{id,base:d.updatedAt||null,data:{resolved:!d.resolved}});toast(!d.resolved?'Case marked as resolved.':'Case marked as unresolved.');}catch(e){toast(authErrorMessage(e),'warning');}}
   function renderDashboard(){
     const rows=filteredReceiving(true); const today=todayISO(); const todayRows=rows.filter(r=>r.shipmentDate===today);
     const pending=rows.filter(r=>baseStatus(r)==='Pending').length, arrived=rows.filter(r=>baseStatus(r)==='Arrived').length, receiving=rows.filter(r=>baseStatus(r)==='Receiving').length,
@@ -1764,4 +1776,3 @@
   });
 
 })();
-

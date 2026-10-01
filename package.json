@@ -5,12 +5,21 @@
     "test": "node --test tests/guardian.test.cjs tests/integrations.test.cjs tests/service-worker.test.cjs",
     "test:browser": "node tests/browser.cjs",
     "check:release": "node scripts/release-gate.cjs",
-    "test:rules": "firebase emulators:exec --config firebase/emulator.json --project demo-receiving-guardian --only firestore \"node --test tests/rules.cjs\""
+    "test:rules": "firebase emulators:exec --config firebase/emulator.json --project demo-receiving-guardian --only firestore \"node --test tests/rules.cjs tests/server.cjs\"",
+    "test:integration": "firebase emulators:exec --config firebase/emulator.json --project demo-receiving-guardian --only firestore,auth,functions \"node --test tests/callable.cjs\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
     "firebase": "^10.12.5",
     "firebase-tools": "^13.35.1",
     "playwright": "1.62.1"
+  },
+  "dependencies": {
+    "firebase-admin": "13.6.0",
+    "firebase-functions": "6.6.0"
+  },
+  "main": "server/index.cjs",
+  "engines": {
+    "node": "22"
   }
 }

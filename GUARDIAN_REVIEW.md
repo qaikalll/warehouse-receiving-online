@@ -1,5 +1,7 @@
 # Receiving App Guardian — continuation review
 
+Historical checkpoint report. See **PRODUCTION_READINESS.md** for the subsequent production-readiness continuation and current blockers.
+
 Status: **DRAFT — not deployed, not production ready.** Continue this exact repository; do not replace the application or blindly deploy the candidate rules.
 
 ## A. Recovered interruption point

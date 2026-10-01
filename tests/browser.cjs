@@ -10,6 +10,7 @@ const {chromium}=runtimeRequire('playwright');
   if(url.hostname!=='guardian.test')return route.fulfill({body:'',contentType:'application/javascript'});
   const filename=url.pathname==='/'?'index.html':url.pathname.slice(1);
   if(filename.includes('..'))return route.abort();
+  if(filename==='guardian-config.js')return route.fulfill({body:'window.RECEIVING_GUARDIAN_CONFIG={functionsRegion:"test"}',contentType:'application/javascript'});
   if(filename==='mock.js')return route.fulfill({body:fs.readFileSync('tests/firebase-double.js','utf8'),contentType:'application/javascript'});
   if(!fs.existsSync(filename))return route.fulfill({status:404,body:''});
   let body=fs.readFileSync(filename);

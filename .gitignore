@@ -3,3 +3,6 @@ playwright-report/
 test-results/
 *-debug.log
 release-evidence.json
+private/
+.env*
+.firebase/

@@ -23,3 +23,12 @@ test('new discrepancy ID is retained across retries and clear data no longer fir
 test('Guardian loads before app and active dependencies resolve to existing sources',()=>{const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('./guardian.js')<html.indexOf('./app.js'));for(const match of html.matchAll(/<script[^>]+src="\.\/([^"?]+)[^"]*"/g))assert.equal(fs.existsSync(match[1]),true,match[1]);});
 
 test('Return module cache URL matches the page after Guardian changes',()=>{const html=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8');const src=html.match(/return-module.js\?v=[^"<]+/)[0];assert.ok(sw.includes(src));});
+test('receiving date edits move legacy booking slots with complete values and reject invalid slots',async()=>{
+ const start=app.indexOf('  async function receivingWriteOperations('),end=app.indexOf('  async function saveReceivingRecord(');
+ const ref=id=>({path:'booking_slots/'+id});let old={id:'r1',shipmentDate:'2026-10-01',bookingSlotStart:'08:00',bookingSlotEnd:'08:30'};
+ const sandbox={guardian:{retryRead:f=>f()},db:{collection:()=>({where:()=>({get:async()=>({docs:[]})}),doc:ref})},receivingEditBase:'base',receivingRecords:[old],receivingClaim:r=>({ref:{path:'claim/'+r.id},data:{}}),BOOKING_TIME_SLOTS:[{start:'08:00',end:'08:30',label:'08:00 – 08:30',breakTime:false}],bookingSlotDocId:(d,s)=>d+'_'+s.replace(':','')};
+ vm.runInNewContext(app.slice(start,end)+';globalThis.ops=receivingWriteOperations',sandbox);
+ const record={id:'r1',shipmentDate:'2026-10-02',doNumber:'DO',companyId:'airali',updatedAt:'now'};const ops=await sandbox.ops(record);
+ assert.equal(ops[2].remove,true);assert.equal(ops[2].ref.path,'booking_slots/2026-10-01_0800');assert.equal(ops[3].ref.path,'booking_slots/2026-10-02_0800');assert.equal(Object.values(ops[3].data).includes(undefined),false);
+ old.bookingSlotEnd='invalid';await assert.rejects(sandbox.ops(record),/invalid/);
+});

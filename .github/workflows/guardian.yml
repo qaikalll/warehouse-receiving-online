@@ -22,6 +22,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm run test:rules
+      - run: npm run test:integration
   production-readiness:
     needs: regression
     runs-on: ubuntu-latest
