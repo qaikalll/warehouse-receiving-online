@@ -1,0 +1,22 @@
+{
+  "heartbeatMetric": {
+    "name": "guardian_monitor_heartbeat",
+    "filter": "resource.type=\"cloud_run_revision\" AND jsonPayload.message=\"guardian-monitor-heartbeat\"",
+    "description": "Count completed Guardian monitor runs; a missing heartbeat is not healthy."
+  },
+  "deadmanAlert": {
+    "displayName": "Receiving Guardian heartbeat missing",
+    "combiner": "OR",
+    "conditions": [{
+      "displayName": "No Guardian heartbeat for 15 minutes",
+      "conditionAbsent": {
+        "filter": "metric.type=\"logging.googleapis.com/user/guardian_monitor_heartbeat\" AND resource.type=\"cloud_run_revision\"",
+        "duration": "900s",
+        "aggregations": [{"alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_SUM"}],
+        "trigger": {"count": 1}
+      }
+    }],
+    "notificationChannels": [],
+    "enabled": false
+  }
+}

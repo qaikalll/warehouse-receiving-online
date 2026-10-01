@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.candidate.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": false,
+    "functions": {
+      "host": "127.0.0.1",
+      "port": 5001
+    },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    }
+  },
+  "functions": [
+    {
+      "source": "..",
+      "codebase": "guardian"
+    }
+  ]
+}
